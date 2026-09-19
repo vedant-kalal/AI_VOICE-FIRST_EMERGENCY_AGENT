@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  TwiML Bin alternative to the FastAPI route POST /incoming-call.
+  Twilio Console -> Explore Products -> TwiML Bins -> Create, paste this, replace YOUR-PUBLIC-HOST
+  (your ngrok / tunnel host, no scheme, no path), then point the phone number's
+  "A call comes in" at this TwiML Bin.
+
+  {{From}} is a Twilio TwiML-Bin variable: the caller's number, handed to the media-stream handler as the
+  custom parameter `from_number` (read in the 'start' event, see openai_realtime_emergency.py).
+-->
+<Response>
+  <Connect>
+    <Stream url="wss://YOUR-PUBLIC-HOST/media-stream-realtime">
+      <Parameter name="from_number" value="{{From}}"/>
+    </Stream>
+  </Connect>
+</Response>
