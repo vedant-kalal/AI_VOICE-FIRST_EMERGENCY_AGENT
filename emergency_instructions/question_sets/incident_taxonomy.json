@@ -1,0 +1,393 @@
+{
+  "_notice": "Demo data. Safety protocols are standard pre-arrival guidance for a hackathon prototype and MUST be reviewed by medical/fire/police authorities before any real-world use.",
+  "critical_severity_default": 85,
+  "departments": {
+    "supervisor": {"name": "Duty Supervisor", "contact": "supervisor-desk"},
+    "fire_dept": {"name": "Fire & Rescue Services", "contact": "fire-control-room"},
+    "hazmat": {"name": "Hazmat / Industrial Safety Board", "contact": "hazmat-cell"},
+    "police": {"name": "Police Department", "contact": "police-control-room"},
+    "ems": {"name": "Emergency Medical Services (EMS)", "contact": "ems-dispatch"},
+    "traffic_police": {"name": "Traffic Police", "contact": "traffic-control"},
+    "disaster_management": {"name": "Disaster Management Authority", "contact": "dma-eoc"},
+    "municipal_corp": {"name": "Municipal Corporation", "contact": "municipal-control"},
+    "utility_board": {"name": "Electricity / Gas / Water Board", "contact": "utility-control"},
+    "pollution_control": {"name": "Pollution Control Board", "contact": "pcb-desk"},
+    "forest_dept": {"name": "Forest Department / Animal Control", "contact": "forest-control"}
+  },
+  "categories": {
+    "fire": {
+      "label": "Fire",
+      "sub_types": ["structural", "industrial", "wildfire", "vehicle_fire", "electrical_fire"],
+      "departments": ["fire_dept"],
+      "escalate_to": ["fire_dept", "ems"],
+      "resources": [
+        {"type": "fire_truck", "required_equipment": [], "note": "always"},
+        {"type": "ambulance", "required_equipment": [], "note": "if anyone is hurt, burned or has inhaled smoke"},
+        {"type": "hazmat_team", "required_equipment": [], "note": "only if chemicals / industrial site is involved"}
+      ],
+      "base_severity": 30,
+      "duplicate_radius_m": 400,
+      "triage_questions": [
+        "Is anyone inside or trapped, or hurt?",
+        "What is burning - a building, a vehicle, vegetation, an electrical fitting?",
+        "Is the fire spreading, or are there gas cylinders or chemicals nearby?"
+      ],
+      "needs_hospital": false,
+      "safety_protocols": {
+        "default": [
+          "Get everyone out of the building right now and stay out - do not go back inside for belongings.",
+          "Stay low under the smoke and keep doors closed behind you to slow the fire.",
+          "Do not use the lift. Use the stairs.",
+          "If your clothes catch fire: stop, drop to the ground, and roll."
+        ]
+      }
+    },
+    "flood": {
+      "label": "Flood",
+      "sub_types": ["flash_flood", "river_overflow", "urban_waterlogging", "dam_related"],
+      "departments": ["disaster_management", "municipal_corp"],
+      "escalate_to": ["disaster_management", "municipal_corp", "ems"],
+      "resources": [
+        {"type": "flood_rescue_boat", "required_equipment": [], "note": "when people are stranded by deep or moving water"},
+        {"type": "rescue_team", "required_equipment": [], "note": "when people are trapped"},
+        {"type": "ambulance", "required_equipment": [], "note": "if anyone is hurt or unwell"}
+      ],
+      "base_severity": 25,
+      "duplicate_radius_m": 1500,
+      "triage_questions": [
+        "How deep is the water right now - ankle, knee, waist, or higher?",
+        "Is the water rising, and is anyone stranded or unable to leave?",
+        "Are there children, elderly or people who cannot walk with you?"
+      ],
+      "needs_hospital": false,
+      "safety_protocols": {
+        "default": [
+          "Move to higher ground or an upper floor now - do not wait for the water to rise further.",
+          "Do not walk, swim or drive through moving floodwater. Even shallow fast water can knock you down.",
+          "If you can do it safely, switch off the electricity at the main switch and stay away from fallen wires."
+        ]
+      }
+    },
+    "road_accident": {
+      "label": "Road Accident",
+      "sub_types": ["collision", "hit_and_run", "pile_up", "pedestrian_struck"],
+      "departments": ["traffic_police", "ems"],
+      "escalate_to": ["traffic_police", "ems", "fire_dept"],
+      "resources": [
+        {"type": "ambulance", "required_equipment": [], "note": "always if anyone is hurt"},
+        {"type": "rescue_team", "required_equipment": ["jaws_of_life"], "note": "if anyone is trapped in a vehicle"},
+        {"type": "police_unit", "required_equipment": [], "note": "traffic control / hit-and-run"},
+        {"type": "tow_truck", "required_equipment": [], "note": "only when vehicles block the road and nobody is trapped"}
+      ],
+      "base_severity": 30,
+      "duplicate_radius_m": 500,
+      "triage_questions": [
+        "How many people are hurt, and is anyone unconscious or not breathing?",
+        "Is anyone trapped inside a vehicle?",
+        "Is there fire, smoke or fuel leaking?"
+      ],
+      "needs_hospital": true,
+      "safety_protocols": {
+        "default": [
+          "Do not move the injured person unless there is fire or immediate danger.",
+          "Switch on your hazard lights and stay well away from moving traffic.",
+          "If someone is bleeding heavily, press firmly on the wound with a clean cloth and keep pressing."
+        ],
+        "cpr": [
+          "Lay the person flat on their back on a firm surface.",
+          "Put the heel of one hand in the centre of the chest, other hand on top.",
+          "Push hard and fast - about two pushes every second - at least five centimetres deep, and let the chest come back up each time.",
+          "Keep going without stopping until the ambulance crew takes over."
+        ]
+      }
+    },
+    "road_blockage": {
+      "label": "Road Blockage / Obstruction",
+      "sub_types": ["fallen_tree", "landslide_debris", "stalled_vehicle", "protest_blockage"],
+      "departments": ["municipal_corp", "traffic_police"],
+      "escalate_to": ["municipal_corp", "traffic_police"],
+      "resources": [
+        {"type": "police_unit", "required_equipment": [], "note": "traffic control"},
+        {"type": "tow_truck", "required_equipment": [], "note": "stalled vehicle"},
+        {"type": "rescue_team", "required_equipment": [], "note": "only for landslide debris / tree removal with people at risk"}
+      ],
+      "base_severity": 10,
+      "duplicate_radius_m": 400,
+      "triage_questions": [
+        "What is blocking the road, and is it fully blocked or one lane?",
+        "Is anyone hurt or trapped, or are there live wires involved?"
+      ],
+      "needs_hospital": false,
+      "safety_protocols": {
+        "default": [
+          "Stay clear of the obstruction and warn approaching drivers if it is safe to do so.",
+          "Keep away from any fallen wires - treat them as live."
+        ]
+      }
+    },
+    "medical": {
+      "label": "Medical Emergency",
+      "sub_types": ["cardiac", "stroke", "seizure", "childbirth", "poisoning", "allergic_reaction", "other_medical"],
+      "departments": ["ems"],
+      "escalate_to": ["ems"],
+      "resources": [
+        {"type": "ambulance", "required_equipment": [], "note": "always"}
+      ],
+      "base_severity": 35,
+      "duplicate_radius_m": 150,
+      "triage_questions": [
+        "Is the person awake and breathing normally?",
+        "How old is the patient, and what exactly happened?",
+        "Is there severe bleeding, chest pain, or any known condition or medication?"
+      ],
+      "needs_hospital": true,
+      "safety_protocols": {
+        "default": [
+          "Keep the person still and comfortable. Do not give food or drink.",
+          "Loosen tight clothing and stay with them.",
+          "If they become unconscious or stop breathing, tell me right away."
+        ],
+        "cpr": [
+          "Lay the person flat on their back on a firm surface.",
+          "Put the heel of one hand in the centre of the chest, other hand on top.",
+          "Push hard and fast - about two pushes every second - at least five centimetres deep, and let the chest come back up each time.",
+          "Keep going without stopping until the ambulance crew takes over. I will stay on the line with you."
+        ],
+        "bleeding": [
+          "Press firmly on the wound with a clean cloth or your hand and do not lift it to check.",
+          "If blood soaks through, add more cloth on top and keep pressing.",
+          "Keep the injured part raised if you can."
+        ],
+        "choking": [
+          "If they cannot cough, speak or breathe, stand behind them and give five firm back blows between the shoulder blades.",
+          "Then five abdominal thrusts: fist above the navel, pull sharply inward and upward.",
+          "Alternate back blows and thrusts until it clears or they become unconscious."
+        ],
+        "childbirth": [
+          "Help the mother lie down or sit comfortably with knees bent, and stay calm.",
+          "Do not pull on the baby. Support the head as it comes and keep the baby warm and skin to skin once born.",
+          "Do not cut the cord. The ambulance crew will do that."
+        ]
+      }
+    },
+    "industrial_chemical": {
+      "label": "Industrial / Chemical Accident",
+      "sub_types": ["gas_leak", "factory_explosion", "chemical_spill"],
+      "departments": ["fire_dept", "hazmat", "pollution_control"],
+      "escalate_to": ["fire_dept", "hazmat", "police"],
+      "resources": [
+        {"type": "hazmat_team", "required_equipment": [], "note": "always"},
+        {"type": "fire_truck", "required_equipment": ["industrial_fire_equipment"], "note": "always - prefer industrial-capable units"},
+        {"type": "ambulance", "required_equipment": [], "note": "if anyone is affected"},
+        {"type": "police_unit", "required_equipment": [], "note": "cordon / evacuation"}
+      ],
+      "base_severity": 40,
+      "duplicate_radius_m": 800,
+      "triage_questions": [
+        "What do you smell or see - gas, smoke, liquid spill?",
+        "Is anyone having trouble breathing, feeling dizzy, or collapsed?",
+        "Is it a factory or a home, and is anyone still inside?"
+      ],
+      "needs_hospital": true,
+      "safety_protocols": {
+        "default": [
+          "Move away from the area right now - go upwind and uphill if you can.",
+          "Do not switch any electrical switches on or off, do not use a lighter or flame, and do not start a vehicle nearby.",
+          "Cover your nose and mouth with a wet cloth and warn people around you to move away."
+        ]
+      }
+    },
+    "building_collapse": {
+      "label": "Building Collapse",
+      "sub_types": ["structural_failure", "construction_accident", "earthquake_damage"],
+      "departments": ["disaster_management", "municipal_corp"],
+      "escalate_to": ["disaster_management", "fire_dept", "ems"],
+      "resources": [
+        {"type": "rescue_team", "required_equipment": ["structural_rescue"], "note": "always"},
+        {"type": "ambulance", "required_equipment": [], "note": "always if anyone is hurt"},
+        {"type": "fire_truck", "required_equipment": [], "note": "if fire, gas or dust hazard"}
+      ],
+      "base_severity": 50,
+      "duplicate_radius_m": 500,
+      "triage_questions": [
+        "Are people trapped under or inside the rubble, and how many?",
+        "Can you hear anyone calling out or tapping?",
+        "Is there gas, fire, or a further collapse risk?"
+      ],
+      "needs_hospital": true,
+      "safety_protocols": {
+        "default": [
+          "Stay out of the damaged structure and keep everyone away - more of it may fall.",
+          "Do not try to dig out trapped people with heavy lifting unless a person is in immediate danger.",
+          "If you can hear someone, keep talking to them and tell them help is coming."
+        ]
+      }
+    },
+    "natural_disaster": {
+      "label": "Natural Disaster",
+      "sub_types": ["earthquake", "cyclone", "landslide", "heatwave"],
+      "departments": ["disaster_management"],
+      "escalate_to": ["disaster_management", "supervisor"],
+      "resources": [
+        {"type": "rescue_team", "required_equipment": [], "note": "people trapped or stranded"},
+        {"type": "ambulance", "required_equipment": [], "note": "if anyone is hurt"}
+      ],
+      "base_severity": 45,
+      "duplicate_radius_m": 3000,
+      "triage_questions": [
+        "What is happening where you are, and is anyone hurt or trapped?",
+        "Are you in a safe place right now?"
+      ],
+      "needs_hospital": false,
+      "safety_protocols": {
+        "default": [
+          "Move to an open, safe area away from buildings, trees and power lines if you can.",
+          "During an earthquake: drop, cover your head, and hold on until the shaking stops."
+        ]
+      }
+    },
+    "crime": {
+      "label": "Crime / Violence in Progress",
+      "sub_types": ["assault", "robbery", "domestic_violence", "active_shooter"],
+      "departments": ["police"],
+      "escalate_to": ["police", "ems", "supervisor"],
+      "resources": [
+        {"type": "police_unit", "required_equipment": [], "note": "always"},
+        {"type": "ambulance", "required_equipment": [], "note": "only if someone is hurt - keep it staged until police clear the scene"}
+      ],
+      "base_severity": 40,
+      "duplicate_radius_m": 300,
+      "triage_questions": [
+        "Are you safe right now, and can you speak freely?",
+        "Are the people involved still there, and is there a weapon?",
+        "Is anyone hurt?"
+      ],
+      "needs_hospital": true,
+      "safety_protocols": {
+        "default": [
+          "If you can get away safely, do so. If not, get somewhere you can lock or block the door and stay quiet.",
+          "Silence your phone ringer, keep out of sight, and do not confront anyone.",
+          "Stay on the line with me if it is safe. If it is not safe to talk, I will stay on and listen."
+        ]
+      }
+    },
+    "utility_failure": {
+      "label": "Utility Failure",
+      "sub_types": ["power_line_down", "gas_pipeline_leak", "water_main_burst"],
+      "departments": ["utility_board"],
+      "escalate_to": ["utility_board", "fire_dept"],
+      "resources": [
+        {"type": "rescue_team", "required_equipment": [], "note": "only if people are at risk"},
+        {"type": "fire_truck", "required_equipment": [], "note": "if there is a fire or gas explosion risk"}
+      ],
+      "base_severity": 20,
+      "duplicate_radius_m": 600,
+      "triage_questions": [
+        "What has failed - a live wire down, a gas smell, or a burst water pipe?",
+        "Is anyone in contact with it or close to it, and is there fire or sparking?"
+      ],
+      "needs_hospital": false,
+      "safety_protocols": {
+        "default": [
+          "Stay at least ten metres away from any fallen wire and treat it as live. Do not touch anything in contact with it.",
+          "If you smell gas, leave the area, do not use switches or flames, and do not use any phone close to the leak.",
+          "Keep other people away from the area."
+        ]
+      }
+    },
+    "missing_person": {
+      "label": "Missing Person / Search & Rescue",
+      "sub_types": ["missing_child", "lost_in_flood", "lost_in_forest"],
+      "departments": ["police", "disaster_management"],
+      "escalate_to": ["police", "disaster_management"],
+      "resources": [
+        {"type": "police_unit", "required_equipment": [], "note": "always"},
+        {"type": "rescue_team", "required_equipment": ["search_dog"], "note": "search & rescue"},
+        {"type": "helicopter", "required_equipment": [], "note": "only for large or remote searches"}
+      ],
+      "base_severity": 30,
+      "duplicate_radius_m": 1500,
+      "triage_questions": [
+        "Who is missing - age, what they were wearing?",
+        "Where and when were they last seen, and could they be in danger from water, heat, or traffic?"
+      ],
+      "needs_hospital": false,
+      "safety_protocols": {
+        "default": [
+          "Stay where you last saw them if you can, and keep your phone free for us to call back.",
+          "Do not search into dangerous areas like deep water or busy roads alone."
+        ]
+      }
+    },
+    "animal_rescue": {
+      "label": "Animal-related Emergency",
+      "sub_types": ["wild_animal_in_populated_area", "livestock_accident"],
+      "departments": ["forest_dept"],
+      "escalate_to": ["forest_dept"],
+      "resources": [
+        {"type": "rescue_team", "required_equipment": [], "note": "wildlife / animal handling"},
+        {"type": "police_unit", "required_equipment": [], "note": "crowd or traffic control if needed"}
+      ],
+      "base_severity": 10,
+      "duplicate_radius_m": 600,
+      "triage_questions": [
+        "What animal is it, and is it behaving aggressively or is it injured?",
+        "Is anyone in danger or hurt?"
+      ],
+      "needs_hospital": false,
+      "safety_protocols": {
+        "default": [
+          "Keep well away from the animal and do not try to corner it or feed it.",
+          "Move children and pets indoors and keep doors closed."
+        ]
+      }
+    },
+    "public_disturbance": {
+      "label": "Public Disturbance",
+      "sub_types": ["riot", "stampede_risk", "uncontrolled_crowd"],
+      "departments": ["police"],
+      "escalate_to": ["police", "supervisor"],
+      "resources": [
+        {"type": "police_unit", "required_equipment": [], "note": "always - crowd control"},
+        {"type": "ambulance", "required_equipment": [], "note": "if anyone is hurt"}
+      ],
+      "base_severity": 25,
+      "duplicate_radius_m": 500,
+      "triage_questions": [
+        "How large is the crowd, and is it turning violent?",
+        "Is anyone hurt or being crushed?"
+      ],
+      "needs_hospital": false,
+      "safety_protocols": {
+        "default": [
+          "Move away from the crowd towards an open exit or side street and keep your hands free.",
+          "If you are caught in a crush, keep your arms up in front of your chest and move with the crowd, not against it."
+        ]
+      }
+    },
+    "other": {
+      "label": "Other Emergency",
+      "sub_types": ["unspecified"],
+      "departments": ["supervisor"],
+      "escalate_to": ["supervisor"],
+      "resources": [],
+      "base_severity": 10,
+      "duplicate_radius_m": 300,
+      "triage_questions": [
+        "Can you tell me what is happening and whether anyone is in danger?"
+      ],
+      "needs_hospital": false,
+      "safety_protocols": {
+        "default": [
+          "Move to a safe place away from any danger and stay on the line with me."
+        ]
+      }
+    }
+  },
+  "protocol_keywords": {
+    "cpr": ["not breathing", "no pulse", "unconscious", "cpr", "cardiac arrest", "collapsed", "unresponsive"],
+    "bleeding": ["bleeding", "blood", "wound", "stabbed", "cut"],
+    "choking": ["choking", "choked", "cannot breathe food", "swallowed"],
+    "childbirth": ["labour", "labor", "giving birth", "childbirth", "contractions", "baby is coming"]
+  }
+}
