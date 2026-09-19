@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emergency Ops Console</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+<style>
+  :root {
+    --bg:#0e1319; --panel:#151c25; --panel2:#1b2431; --line:#263244; --text:#e6edf5; --muted:#8a99ad;
+    --crit:#ff4d4f; --high:#ff9f43; --med:#f7c948; --low:#3fbf7f; --blue:#4da3ff; --purple:#a78bfa;
+  }
+  * { box-sizing:border-box; }
+  html,body { height:100%; margin:0; background:var(--bg); color:var(--text);
+    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  header { display:flex; align-items:center; gap:14px; padding:10px 16px; background:var(--panel);
+    border-bottom:1px solid var(--line); }
+  header h1 { font-size:16px; margin:0; letter-spacing:.3px; }
+  .pill { padding:2px 9px; border-radius:99px; font-size:12px; border:1px solid var(--line); color:var(--muted); }
+  .pill.ok { color:var(--low); border-color:var(--low); } .pill.bad { color:var(--crit); border-color:var(--crit); }
+  .pill.mode { color:var(--blue); border-color:var(--blue); }
+  .spacer { flex:1; }
+  main { display:grid; grid-template-columns:330px 1fr 420px; height:calc(100% - 47px); }
+  aside, section { min-height:0; overflow:auto; }
+  #left { background:var(--panel); border-right:1px solid var(--line); }
+  #right { background:var(--panel); border-left:1px solid var(--line); }
+  #map { height:100%; min-height:300px; background:#0b0f14; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin:0; padding:12px 14px 6px; }
+  .inc { padding:10px 14px; border-bottom:1px solid var(--line); cursor:pointer; display:grid; grid-template-columns:44px 1fr; gap:10px; }
+  .inc:hover, .inc.sel { background:var(--panel2); }
+  .sev { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:16px; color:#0b0f14; }
+  .sev.critical{background:var(--crit)} .sev.high{background:var(--high)} .sev.medium{background:var(--med)}
+  .sev.low{background:var(--low)} .sev.unrated{background:#5b6b80}
+  .inc .t { font-weight:600; } .inc .s { color:var(--muted); font-size:12px; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--crit); margin-right:6px;
+    animation:pulse 1.2s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(255,77,79,.7)} 100%{box-shadow:0 0 0 9px rgba(255,77,79,0)} }
+  .tag { font-size:11px; padding:1px 7px; border-radius:6px; background:var(--panel2); border:1px solid var(--line); color:var(--muted); margin-right:4px; }
+  .tag.esc { color:var(--crit); border-color:var(--crit); } .tag.rev { color:var(--med); border-color:var(--med); }
+  .box { margin:8px 14px; padding:10px 12px; background:var(--panel2); border:1px solid var(--line); border-radius:10px; }
+  .box h3 { margin:0 0 6px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; }
+  .row { display:flex; justify-content:space-between; gap:8px; padding:3px 0; }
+  .muted { color:var(--muted); } .small { font-size:12px; }
+  button { background:var(--blue); color:#06101c; border:0; border-radius:7px; padding:5px 11px; cursor:pointer; font-weight:600; }
+  button.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  button.danger { background:var(--crit); color:#fff; }
+  details { margin:4px 0; } summary { cursor:pointer; }
+  pre { white-space:pre-wrap; word-break:break-word; background:#0b0f14; padding:6px 8px; border-radius:6px; font-size:11px; max-height:180px; overflow:auto; }
+  .tool { border-left:3px solid var(--blue); padding-left:8px; margin:6px 0; }
+  .tool.rejected, .tool.error { border-color:var(--crit); } .tool.success { border-color:var(--low); }
+  .tr { margin:3px 0; } .tr .who { font-weight:600; } .tr .who.caller { color:var(--high); } .tr .who.agent { color:var(--blue); }
+  #feed { max-height:180px; overflow:auto; font-size:12px; color:var(--muted); padding:0 14px 10px; }
+  .legend { position:absolute; z-index:500; left:12px; bottom:12px; background:rgba(21,28,37,.92); border:1px solid var(--line);
+    border-radius:10px; padding:8px 10px; font-size:12px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; }
+  #mapwrap { position:relative; height:100%; }
+  .empty { padding:24px 14px; color:var(--muted); }
+  @media (max-width: 1100px) { main { grid-template-columns:1fr; grid-auto-rows:auto; } #map { height:60vh; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Emergency Ops Console</h1>
+  <span id="conn" class="pill bad">connecting…</span>
+  <span id="mode" class="pill mode">mode: …</span>
+  <span id="calls" class="pill">live calls: 0</span>
+  <span class="spacer"></span>
+  <span class="pill">demo data is synthetic</span>
+</header>
+<main>
+  <aside id="left">
+    <h2>Incidents</h2><div id="incidents"></div>
+    <h2>Human review queue</h2><div id="review"></div>
+    <h2>Live event feed</h2><div id="feed"></div>
+  </aside>
+  <section id="mapwrap"><div id="map"></div>
+    <div class="legend">
+      <div><i style="background:var(--crit)"></i>critical <i style="background:var(--high)"></i>high
+        <i style="background:var(--med)"></i>medium <i style="background:var(--low)"></i>low</div>
+      <div style="margin-top:4px"><i style="background:#3fbf7f"></i>available <i style="background:#4da3ff"></i>en route
+        <i style="background:#a78bfa"></i>on scene <i style="background:#f7c948"></i>reserved <i style="background:#5b6b80"></i>busy</div>
+      <div style="margin-top:4px">H = hospital (green beds free / amber low / red full)</div>
+    </div>
+  </section>
+  <aside id="right"><div class="empty">Select an incident to see the call, the AI's decisions and its full tool-call audit trail.</div></aside>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script>
+"use strict";
+const params = new URLSearchParams(location.search);
+const KEY = params.get("key") || "";
+const H = KEY ? { "X-API-Key": KEY } : {};
+const S = { incidents:new Map(), resources:new Map(), facilities:[], assignments:new Map(), selected:null, liveCalls:0, detail:null };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const SEV = { critical:"#ff4d4f", high:"#ff9f43", medium:"#f7c948", low:"#3fbf7f", unrated:"#5b6b80" };
+const RES = { available:"#3fbf7f", en_route:"#4da3ff", on_scene:"#a78bfa", reserved:"#f7c948", busy:"#5b6b80", offline:"#333c4a" };
+
+const map = L.map("map", { zoomControl:true }).setView([23.0225, 72.5714], 12);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:19, attribution:"&copy; OpenStreetMap contributors" }).addTo(map);
+const incLayer = L.layerGroup().addTo(map), resLayer = L.layerGroup().addTo(map), facLayer = L.layerGroup().addTo(map), searchLayer = L.layerGroup().addTo(map);
+const incMarkers = new Map(), resMarkers = new Map();
+
+async function api(path, opts={}) {
+  const r = await fetch(path, { ...opts, headers:{ ...H, ...(opts.headers||{}) } });
+  if (!r.ok) throw new Error(path + " -> " + r.status);
+  return r.json();
+}
+
+/* ── rendering ─────────────────────────────────────────────── */
+function drawFacilities() {
+  facLayer.clearLayers();
+  for (const f of S.facilities) {
+    if (f.type !== "hospital") {
+      L.circleMarker([f.lat, f.lng], { radius:4, color:"#8a99ad", weight:1, fillOpacity:.6 }).bindTooltip(esc(f.name)).addTo(facLayer);
+      continue;
+    }
+    const cap = f.capacity || {}, beds = cap.available_beds ?? 0;
+    const col = beds <= 0 ? "#ff4d4f" : beds <= 3 ? "#f7c948" : "#3fbf7f";
+    const icon = L.divIcon({ className:"", html:`<div style="background:${col};color:#0b0f14;font-weight:700;width:20px;height:20px;border-radius:5px;text-align:center;line-height:20px">H</div>`, iconSize:[20,20] });
+    L.marker([f.lat, f.lng], { icon }).bindTooltip(`${esc(f.name)}<br>beds free ${beds}, ICU free ${cap.available_icu ?? 0}`).addTo(facLayer);
+  }
+}
+function drawResource(r) {
+  let m = resMarkers.get(r.id);
+  const col = RES[r.status] || "#5b6b80";
+  if (!m) { m = L.circleMarker([r.lat, r.lng], { radius:5, weight:1 }).addTo(resLayer); resMarkers.set(r.id, m); }
+  m.setLatLng([r.lat, r.lng]).setStyle({ color:col, fillColor:col, fillOpacity:.9 });
+  m.bindTooltip(`${esc(r.callsign)} · ${esc(r.type)} · ${esc(r.status)}`);
+}
+function drawIncident(i) {
+  const old = incMarkers.get(i.id);
+  if (old) { incLayer.removeLayer(old); incMarkers.delete(i.id); }
+  if (i.status === "merged" || i.lat == null || ["resolved","closed"].includes(i.status)) return;
+  const col = SEV[i.severity_level] || SEV.unrated;
+  const m = L.circleMarker([i.lat, i.lng], { radius: 9 + Math.round((i.severity||0)/12), color: i.live_call ? "#fff" : col, weight: i.live_call ? 3 : 2, fillColor:col, fillOpacity:.55 })
+    .bindTooltip(`#${i.incident_number} ${esc(i.category)} · sev ${i.severity}${i.live_call ? " · CALLER ON LINE" : ""}`)
+    .on("click", () => select(i.id)).addTo(incLayer);
+  incMarkers.set(i.id, m);
+}
+function renderIncidents() {
+  const list = [...S.incidents.values()].filter(i => !["merged","resolved","closed"].includes(i.status) && i.status !== "needs_review")
+    .sort((a,b) => b.severity - a.severity);
+  const el = document.getElementById("incidents");
+  el.innerHTML = list.length ? "" : `<div class="empty">No active incidents.</div>`;
+  for (const i of list) {
+    const d = document.createElement("div");
+    d.className = "inc" + (S.selected === i.id ? " sel" : "");
+    d.innerHTML = `<div class="sev ${esc(i.severity_level)}">${i.severity}</div>
+      <div><div class="t">${i.live_call ? '<span class="dot"></span>' : ""}#${i.incident_number} ${esc(i.category.replace(/_/g," "))}</div>
+      <div class="s">${esc(i.address_text || "location pending")}</div>
+      <div class="s"><span class="tag">${esc(i.status)}</span>${i.escalated ? '<span class="tag esc">escalated</span>' : ""}<span class="tag">${i.report_count} report${i.report_count>1?"s":""}</span></div></div>`;
+    d.onclick = () => select(i.id);
+    el.appendChild(d);
+  }
+  const rev = [...S.incidents.values()].filter(i => i.status === "needs_review");
+  const rv = document.getElementById("review");
+  rv.innerHTML = rev.length ? "" : `<div class="empty">Nothing waiting for review.</div>`;
+  for (const i of rev) {
+    const d = document.createElement("div");
+    d.className = "box";
+    d.innerHTML = `<div class="row"><b>#${i.incident_number} ${esc(i.category)}</b><span class="tag rev">low confidence</span></div>
+      <div class="small muted">${esc((i.confidence_reasons||[]).join("; "))}</div>
+      <div class="small">${esc(i.description)}</div>
+      <div style="margin-top:6px"><button data-a="release">Release to queue</button> <button class="ghost" data-a="reject">Reject (false alarm)</button></div>`;
+    d.querySelectorAll("button").forEach(b => b.onclick = async () => { await api(`/api/incidents/${i.id}/review`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ action:b.dataset.a }) }); });
+    rv.appendChild(d);
+  }
+  document.getElementById("calls").textContent = "live calls: " + S.liveCalls;
+}
+function feed(text) {
+  const f = document.getElementById("feed");
+  const line = document.createElement("div");
+  line.textContent = new Date().toLocaleTimeString() + "  " + text;
+  f.prepend(line);
+  while (f.children.length > 60) f.removeChild(f.lastChild);
+}
+
+/* ── detail panel ──────────────────────────────────────────── */
+async function select(id) {
+  S.selected = id; renderIncidents();
+  const d = await api(`/api/incidents/${id}`);
+  S.detail = d; renderDetail();
+  const i = d.incident; if (i.lat != null) map.flyTo([i.lat, i.lng], Math.max(map.getZoom(), 13), { duration:.6 });
+}
+function renderDetail() {
+  const d = S.detail, el = document.getElementById("right");
+  if (!d) return;
+  const i = d.incident;
+  const sig = Object.entries(d.severity_signals || {}).map(([k,v]) => `${esc(k)}: ${esc(v)}`).join(" · ") || "none reported";
+  let h = `<h2>Incident #${i.incident_number}</h2>
+  <div class="box"><div class="row"><b>${esc(i.category.replace(/_/g," "))}</b><span class="tag">${esc(i.status)}</span></div>
+    <div class="small muted">${esc(i.address_text || "location pending")} ${i.location_confirmed ? "· confirmed by caller" : "· not yet confirmed"}</div>
+    <div>${esc(i.description)}</div>
+    <div class="row small"><span>Severity <b style="color:${SEV[i.severity_level]||"#fff"}">${i.severity} (${esc(i.severity_level)})</b></span><span>${i.report_count} report(s) · ${i.people_affected} affected</span></div>
+    <div class="small muted">Why: ${esc(i.severity_explanation || "not yet estimated")}</div>
+    <div class="small muted">Signals: ${sig}</div>
+    ${["resolved","closed"].includes(i.status) ? "" : `<div style="margin-top:6px"><button class="ghost" id="resolveBtn">Mark resolved</button></div>`}
+  </div>`;
+  if (d.assignments.length) {
+    h += `<div class="box"><h3>Assigned resources</h3>` + d.assignments.map(a => `
+      <div class="row"><span><b>${esc(a.callsign)}</b> <span class="muted">${esc(a.type)}</span></span>
+        <span>${esc(a.status)}${a.eta_minutes ? " · ETA " + a.eta_minutes + " min" : ""}</span></div>
+      <div class="small muted">${esc(a.reason || "")}</div>
+      ${a.status === "pending_approval" ? `<div><button data-approve="${a.id}">Approve dispatch</button> <button class="ghost" data-reject="${a.id}">Reject</button></div>` : ""}`).join("") + `</div>`;
+  }
+  if (d.escalations.length) {
+    h += `<div class="box"><h3>Escalations</h3>` + d.escalations.map(e => `<div class="small"><b>${esc(e.source)}</b>: ${esc(e.reason)}<br><span class="muted">→ ${esc((e.escalate_to||[]).join(", "))}</span></div>`).join("") + `</div>`;
+  }
+  if (d.reports.length > 1) {
+    h += `<div class="box"><h3>Merged duplicate reports</h3>` + d.reports.map(r => `<div class="small">${esc(r.note)}${r.match_score ? " (match " + r.match_score + ")" : ""}: ${esc(r.description)}</div>`).join("") + `</div>`;
+  }
+  for (const c of d.calls) {
+    h += `<div class="box"><h3>Call ${c.is_live ? "· LIVE" : "· " + esc(c.status)}</h3>` +
+      (c.summary ? `<div class="small"><b>AI summary:</b> ${esc(c.summary)}</div>` : "") +
+      `<details ${c.is_live ? "open" : ""}><summary class="small muted">Transcript (${c.transcript.length})</summary>` +
+      c.transcript.map(t => `<div class="tr small"><span class="who ${esc(t.role)}">${esc(t.role)}:</span> ${esc(t.content)}</div>`).join("") + `</details></div>`;
+  }
+  for (const ho of d.handoffs || []) {
+    h += `<div class="box"><h3>Call transfer → ${esc(ho.department || "supervisor")} · ${esc(ho.status)}</h3>
+      <div class="small muted">${esc(ho.reason || "")}</div>` +
+      ho.attempts.map(a => `<div class="row small"><span>#${a.step + 1} ${esc(a.name)} <span class="muted">(${esc(a.role)}, cycle ${a.cycle})</span></span>
+        <span>SMS ${esc(a.sms || "-")} · ${esc(a.dial_status)}${a.answered ? " ✓ answered" : ""}</span></div>`).join("") + `</div>`;
+  }
+  if ((d.timeline || []).length) {
+    h += `<div class="box"><h3>Incident timeline (${d.timeline.length})</h3>` + d.timeline.map(e => `
+      <div class="small"><span class="muted">${esc((e.at || "").slice(11, 19))}</span> <b>${esc(e.type)}</b> <span class="muted">(${esc(e.actor)})</span></div>`).join("") + `</div>`;
+  }
+  h += `<div class="box"><h3>Agent tool-call audit trail (${d.tool_calls.length})</h3>` + d.tool_calls.map(t => `
+    <div class="tool ${esc(t.status)}"><div class="row small"><b>${esc(t.tool)}</b><span class="muted">${esc(t.status)} · ${t.duration_ms} ms</span></div>
+    <details><summary class="small muted">args / result</summary><pre>${esc(JSON.stringify({ arguments:t.arguments, result:t.result }, null, 2))}</pre></details></div>`).join("") + `</div>`;
+  el.innerHTML = h;
+  const rb = document.getElementById("resolveBtn");
+  if (rb) rb.onclick = async () => { await api(`/api/incidents/${i.id}/status`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ status:"resolved" }) }); };
+  el.querySelectorAll("[data-approve]").forEach(b => b.onclick = async () => { await api(`/api/assignments/${b.dataset.approve}/approve`, { method:"POST" }); select(i.id); });
+  el.querySelectorAll("[data-reject]").forEach(b => b.onclick = async () => { await api(`/api/assignments/${b.dataset.reject}/reject`, { method:"POST" }); select(i.id); });
+}
+function refreshDetailSoon() { if (S.selected) { clearTimeout(refreshDetailSoon.t); refreshDetailSoon.t = setTimeout(() => select(S.selected), 350); } }
+
+/* ── radius search visual (PDF §5.4) ───────────────────────── */
+function showSearch(s) {
+  searchLayer.clearLayers();
+  const circle = L.circle([s.search.lat, s.search.lng], { radius:s.search.radius_km * 1000, color:"#4da3ff", weight:2, dashArray:"6 6", fillOpacity:.04 }).addTo(searchLayer);
+  for (const e of s.considered) {
+    const chosen = e.decision === "selected", cand = e.decision === "candidate";
+    const col = chosen ? "#3fbf7f" : cand ? "#4da3ff" : "#8a99ad";
+    L.polyline([[s.search.lat, s.search.lng], [e.lat, e.lng]], { color:col, weight:chosen ? 3 : 1, dashArray:chosen ? null : "3 5", opacity:.85 })
+      .bindTooltip(`${esc(e.callsign)} · ${e.distance_km} km · ETA ${e.eta_minutes} min<br>${esc(e.decision)}${e.reason ? ": " + esc(e.reason) : ""}`).addTo(searchLayer);
+  }
+  map.fitBounds(circle.getBounds().pad(.05));
+  setTimeout(() => searchLayer.clearLayers(), 20000);
+  const best = s.ranked && s.ranked[0];
+  feed(`radius search ${s.search.radius_km} km for ${s.search.resource_type}: ${s.considered.length} units considered` + (best ? `, chose ${best.callsign}` : ", none available"));
+}
+
+/* ── nearest department centre (external map service) ─────── */
+function showCenters(r) {
+  if (!r.centers || !r.centers.length) { feed(`no ${r.label} found`); return; }
+  searchLayer.clearLayers();
+  L.circle([r.search.lat, r.search.lng], { radius:r.search.radius_km * 1000, color:"#a78bfa", weight:2, dashArray:"6 6", fillOpacity:.03 }).addTo(searchLayer);
+  r.centers.forEach((c, i) => {
+    const col = i === 0 ? "#a78bfa" : "#8a99ad";
+    L.polyline([[r.search.lat, r.search.lng], [c.lat, c.lng]], { color:col, weight:i === 0 ? 3 : 1, dashArray:i === 0 ? null : "3 5" })
+      .bindTooltip(`${esc(c.name)} · ${c.distance_km} km` + (c.eta_minutes ? ` · road ETA ${c.eta_minutes} min (${esc(c.route_provider)})` : "")).addTo(searchLayer);
+    L.circleMarker([c.lat, c.lng], { radius:7, color:col, fillColor:col, fillOpacity:.8 }).bindTooltip(esc(c.name)).addTo(searchLayer);
+  });
+  const b = r.centers[0];
+  feed(`nearest ${r.label} via ${r.provider}${r.cache_hit ? " (cached)" : ""}${r.fallback ? " [fallback: seeded data]" : ""}: ${b.name}, ${b.distance_km} km` + (b.eta_minutes ? `, ${b.eta_minutes} min by road` : ""));
+  setTimeout(() => searchLayer.clearLayers(), 25000);
+}
+
+/* ── live events ───────────────────────────────────────────── */
+function onEvent(ev) {
+  const d = ev.data;
+  switch (ev.type) {
+    case "incident_created": case "incident_updated": case "incident_merged":
+      S.incidents.set(d.id, d); drawIncident(d); renderIncidents();
+      if (ev.type === "incident_created") feed(`new incident #${d.incident_number} ${d.category}`);
+      if (ev.type === "incident_merged") feed(`report merged into an existing incident`);
+      if (S.selected === d.id || S.selected === d.merged_into_id) refreshDetailSoon(); break;
+    case "resource_search": showSearch(d); break;
+    case "resource_moved": { const r = S.resources.get(d.resource_id); if (r) { Object.assign(r, { lat:d.lat, lng:d.lng, status:d.status }); drawResource(r); } break; }
+    case "resource_updated": S.resources.set(d.id, d); drawResource(d); break;
+    case "assignment_created": {
+      const r = S.resources.get(d.resource_id); if (r) { r.status = d.status === "pending_approval" ? "reserved" : "en_route"; drawResource(r); }
+      feed(`${d.callsign} ${d.status === "pending_approval" ? "reserved (awaiting approval)" : "dispatched, ETA " + d.eta_minutes + " min"}`);
+      if (S.selected === d.incident_id) refreshDetailSoon(); break; }
+    case "escalation": feed(`ESCALATION #${d.incident_number}: ${(d.escalate_to||[]).join(", ")}`); if (S.selected === d.incident_id) refreshDetailSoon(); break;
+    case "call_started": S.liveCalls++; feed("call started"); renderIncidents(); break;
+    case "call_ended": S.liveCalls = Math.max(0, S.liveCalls - 1); feed("call ended"); renderIncidents(); if (S.selected) refreshDetailSoon(); break;
+    case "tool_call": feed(`tool ${d.tool} → ${d.status}`); if (d.incident_id && S.selected === d.incident_id) refreshDetailSoon(); break;
+    case "transcript": if (S.detail && S.detail.calls.some(c => c.is_live)) refreshDetailSoon(); break;
+    case "human_handoff": feed("HANDOFF to human operator: " + (d.context_summary || "")); break;
+    case "hospital_query": feed("hospital capacity checked"); break;
+    case "facility_search": showCenters(d); break;
+    case "handoff_update": feed(`call transfer ${d.status}: step ${d.current_step + 1}/${d.total_steps}` + (d.attempts.length ? " → " + d.attempts[d.attempts.length - 1].name + " (" + d.attempts[d.attempts.length - 1].dial_status + ")" : "")); if (S.selected === d.incident_id) refreshDetailSoon(); break;
+  }
+}
+function connect() {
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws/dashboard" + (KEY ? "?key=" + encodeURIComponent(KEY) : ""));
+  const pill = document.getElementById("conn");
+  ws.onopen = () => { pill.textContent = "live"; pill.className = "pill ok"; setInterval(() => ws.readyState === 1 && ws.send("ping"), 25000); };
+  ws.onmessage = m => { try { onEvent(JSON.parse(m.data)); } catch (e) { console.error(e); } };
+  ws.onclose = () => { pill.textContent = "reconnecting…"; pill.className = "pill bad"; setTimeout(load, 2000); };
+}
+async function load() {
+  try {
+    const st = await api("/api/state");
+    document.getElementById("mode").textContent = "dispatch: " + st.dispatch_mode;
+    map.setView([st.center.lat, st.center.lng], 12);
+    S.incidents.clear(); st.incidents.forEach(i => S.incidents.set(i.id, i));
+    S.resources.clear(); st.resources.forEach(r => S.resources.set(r.id, r));
+    S.facilities = st.facilities; S.liveCalls = st.live_calls;
+    incLayer.clearLayers(); incMarkers.clear(); resLayer.clearLayers(); resMarkers.clear();
+    S.incidents.forEach(drawIncident); S.resources.forEach(drawResource); drawFacilities(); renderIncidents();
+    connect();
+  } catch (e) {
+    document.getElementById("conn").textContent = "error: " + e.message;
+    setTimeout(load, 3000);
+  }
+}
+load();
+</script>
+</body>
+</html>
