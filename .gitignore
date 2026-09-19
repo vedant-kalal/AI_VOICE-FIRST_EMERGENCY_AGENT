@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.env
+*.log
+log/
+*.db
+*.sqlite3
+.pytest_cache/
+.idea/
+.vscode/
+# Generated TTS clips (rebuilt on first startup when an OpenAI key is set)
+app/static/*.mulaw
+__init__.py
+script.py.mako

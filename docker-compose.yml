@@ -1,0 +1,37 @@
+# Full stack: Postgres + PostGIS and the app. For a zero-infra run just use SQLite (see README).
+#   docker compose up -d db        # only the database, then run the app on the host
+#   docker compose up --build      # database + app
+# The credentials below are LOCAL-DEV ONLY defaults — do not reuse them anywhere real.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: emergency
+      POSTGRES_PASSWORD: emergency
+      POSTGRES_DB: emergency
+    ports:
+      - "127.0.0.1:5432:5432"   # bound to localhost only
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emergency -d emergency"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg2://emergency:emergency@db:5432/emergency
+    ports:
+      - "8000:8000"
+    command: sh -c "python scripts/init_db.py && uvicorn main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  pgdata:

@@ -1,0 +1,31 @@
+# Same stack / pins as ai-callcenter (FastAPI + Twilio Media Streams + OpenAI Realtime + SQLAlchemy/Alembic)
+fastapi==0.115.12
+starlette==0.46.2
+uvicorn==0.34.2
+pydantic==2.11.3
+pydantic-settings==2.9.1
+python-dotenv==1.1.0
+python-multipart==0.0.20
+httpx==0.28.1
+requests==2.32.3
+pytz==2025.2
+
+# Realtime voice bridge (legacy websockets API is used: extra_headers / .closed — keep 11.x).
+# NOTE: ai-callcenter uses pydub (needs ffmpeg) for mu-law clips; this project uses stdlib wave+audioop instead.
+websockets==11.0.3
+openai==2.14.0
+twilio==9.9.0
+audioop-lts; python_version >= "3.13"
+
+# Database (Postgres + PostGIS in docker-compose; SQLite works with no infra for local dev)
+SQLAlchemy==2.0.40
+psycopg2-binary==2.9.11
+alembic==1.15.2
+
+# Config pattern from ai-callcenter (Key Vault when IS_LOCAL=false). Optional locally.
+azure-identity==1.17.1
+azure-keyvault-secrets==4.9.0
+
+# Tests
+pytest==8.3.5
+tiktoken
