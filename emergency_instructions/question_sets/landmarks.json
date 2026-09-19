@@ -1,0 +1,33 @@
+{
+  "_notice": "Approximate demo gazetteer for the offline geocoder (Ahmedabad, India). Coordinates are rounded and for hackathon demo only; live geocoding via Nominatim is used for anything not listed. 'SG Mall' is a placeholder landmark matching the PDF's flagship scenario.",
+  "city": "Ahmedabad",
+  "landmarks": [
+    {"name": "SG Highway near SG Mall", "aliases": ["sg mall", "s g mall", "sg highway near sg mall"], "lat": 23.0787, "lng": 72.5064, "kind": "poi"},
+    {"name": "SG Highway", "aliases": ["sg highway", "s g highway", "sardar patel ring road sg", "sarkhej gandhinagar highway"], "lat": 23.0500, "lng": 72.5075, "kind": "road"},
+    {"name": "Iskcon Cross Road", "aliases": ["iskcon cross road", "iskcon crossroad", "iskcon temple", "iscon cross road"], "lat": 23.0258, "lng": 72.5074, "kind": "junction"},
+    {"name": "Thaltej Cross Road", "aliases": ["thaltej cross road", "thaltej crossroad", "thaltej"], "lat": 23.0498, "lng": 72.5075, "kind": "junction"},
+    {"name": "Prahlad Nagar", "aliases": ["prahlad nagar", "prahladnagar"], "lat": 23.0121, "lng": 72.5108, "kind": "area"},
+    {"name": "Bopal", "aliases": ["bopal"], "lat": 23.0338, "lng": 72.4622, "kind": "area"},
+    {"name": "Sola", "aliases": ["sola", "sola bridge", "sola civil"], "lat": 23.0771, "lng": 72.5180, "kind": "area"},
+    {"name": "Gota", "aliases": ["gota"], "lat": 23.1010, "lng": 72.5460, "kind": "area"},
+    {"name": "Vastrapur Lake", "aliases": ["vastrapur lake", "vastrapur", "vastrapur talav"], "lat": 23.0369, "lng": 72.5288, "kind": "poi"},
+    {"name": "Law Garden", "aliases": ["law garden", "law garden night market"], "lat": 23.0258, "lng": 72.5566, "kind": "poi"},
+    {"name": "Sabarmati Riverfront", "aliases": ["sabarmati riverfront", "riverfront", "sabarmati river"], "lat": 23.0350, "lng": 72.5717, "kind": "poi"},
+    {"name": "Kalupur Railway Station", "aliases": ["kalupur railway station", "ahmedabad railway station", "kalupur station", "kalupur"], "lat": 23.0264, "lng": 72.6015, "kind": "poi"},
+    {"name": "Kankaria Lake", "aliases": ["kankaria lake", "kankaria"], "lat": 23.0067, "lng": 72.6021, "kind": "poi"},
+    {"name": "Maninagar", "aliases": ["maninagar", "maninagar railway station"], "lat": 22.9968, "lng": 72.6077, "kind": "area"},
+    {"name": "Civil Hospital Ahmedabad", "aliases": ["civil hospital", "asarwa civil hospital"], "lat": 23.0525, "lng": 72.6039, "kind": "poi"},
+    {"name": "SVPI Airport", "aliases": ["airport", "svpi airport", "ahmedabad airport", "sardar vallabhbhai patel airport"], "lat": 23.0772, "lng": 72.6347, "kind": "poi"},
+    {"name": "Naroda GIDC", "aliases": ["naroda gidc", "naroda industrial area", "naroda"], "lat": 23.0748, "lng": 72.6560, "kind": "industrial"},
+    {"name": "Vatva GIDC", "aliases": ["vatva gidc", "vatva industrial area", "vatva"], "lat": 22.9584, "lng": 72.6377, "kind": "industrial"},
+    {"name": "Odhav Industrial Estate", "aliases": ["odhav", "odhav industrial estate", "odhav gidc"], "lat": 23.0215, "lng": 72.6740, "kind": "industrial"},
+    {"name": "Narol", "aliases": ["narol", "narol circle"], "lat": 22.9636, "lng": 72.5967, "kind": "area"},
+    {"name": "Sarkhej Roza", "aliases": ["sarkhej roza", "sarkhej"], "lat": 22.9877, "lng": 72.5027, "kind": "poi"},
+    {"name": "Navrangpura", "aliases": ["navrangpura", "navrangpura bus stand"], "lat": 23.0367, "lng": 72.5610, "kind": "area"},
+    {"name": "CG Road", "aliases": ["cg road", "c g road", "chimanlal girdharlal road"], "lat": 23.0336, "lng": 72.5580, "kind": "road"},
+    {"name": "Paldi", "aliases": ["paldi", "paldi cross road"], "lat": 23.0116, "lng": 72.5620, "kind": "area"},
+    {"name": "Satellite", "aliases": ["satellite", "satellite road", "jodhpur cross road"], "lat": 23.0290, "lng": 72.5290, "kind": "area"},
+    {"name": "Chandkheda", "aliases": ["chandkheda"], "lat": 23.1090, "lng": 72.5850, "kind": "area"},
+    {"name": "Ahmedabad city centre", "aliases": ["ahmedabad centre", "city centre", "ellis bridge", "ellisbridge"], "lat": 23.0225, "lng": 72.5714, "kind": "area"}
+  ]
+}
