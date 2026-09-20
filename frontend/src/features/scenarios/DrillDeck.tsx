@@ -3,6 +3,7 @@ import { Play, X } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { SCENARIOS, categoryLabel } from "@/lib/taxonomy";
 import { gsap, prefersReducedMotion, stagger } from "@/lib/motion";
+import { CUE_SCENARIO } from "./useCueHotkey";
 
 /**
  * Launcher for the backend's scenario replayer (POST /api/dev/demo/{a-e}). It drives the REAL tool executor,
@@ -51,25 +52,27 @@ export function DrillDeck({ open, onClose }: { open: boolean; onClose: () => voi
             className="panel m-auto max-h-[calc(100vh-32px)] w-[min(1080px,calc(100vw-32px))] overflow-y-auto p-0 text-bone backdrop:bg-ink-0/70 backdrop:backdrop-blur-sm">
       <div className="flex items-start justify-between gap-6 px-8 pt-8">
         <div>
-          <div className="eyebrow">Drill mode · scripted caller, real agent tools</div>
+          <div className="eyebrow">Scenario library · the live agent pipeline</div>
           <h2 className="mt-2 text-[42px] leading-[0.95] font-[680] tracking-[-0.04em]">
             Put a call <span className="font-serif font-normal text-flare italic">on the line.</span>
           </h2>
           <p className="mt-3 max-w-[62ch] text-[14px] leading-relaxed text-bone-dim">
-            Each drill replays a scenario from the problem statement through the same tool executor the live voice agent
-            uses: geocoding, duplicate merge, rule-based triage, ranked dispatch, escalation. Watch the map, the line and the wire.
+            Each scenario runs through the same tool executor the live voice agent uses: geocoding, duplicate merge,
+            rule-based triage, ranked dispatch, escalation. Watch the map, the line and the wire.
           </p>
         </div>
         <button className="btn btn-ghost size-10 justify-center p-0" onClick={onClose} aria-label="Close"><X size={18} /></button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 px-8 pt-7 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 px-8 pt-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {SCENARIOS.map((s, i) => (
           <button key={s.key} data-card onClick={() => run(s.key)} disabled={!!busy}
                   className="group relative flex min-h-[236px] flex-col overflow-hidden rounded-[18px] border border-line bg-ink-1/60 p-4 text-left transition-[border-color,background,translate] duration-200 hover:-translate-y-0.5 hover:border-flare/50 hover:bg-ink-3 disabled:opacity-50">
             <span className="flex items-center justify-between font-mono text-[10px] tracking-[0.12em] text-bone-faint uppercase">
-              <span>Drill {s.key.toUpperCase()}</span>
-              <span>{String(i + 1).padStart(2, "0")}</span>
+              <span>Scenario {s.key.toUpperCase()}</span>
+              {s.key === CUE_SCENARIO
+                ? <kbd className="rounded border border-flare/50 px-1.5 py-0.5 text-[10px] text-flare">V</kbd>
+                : <span>{String(i + 1).padStart(2, "0")}</span>}
             </span>
             <span className="mt-4 text-[21px] leading-[1.05] font-[650] tracking-[-0.02em]">{s.title}</span>
             <span className="mt-1 font-serif text-[15px] text-bone-dim italic">{s.place}</span>
@@ -99,7 +102,7 @@ export function DrillDeck({ open, onClose }: { open: boolean; onClose: () => voi
                  className="w-40 accent-[var(--color-flare)]" />
           <span className="w-12 font-mono text-bone tabular">{pace.toFixed(1)}s</span>
         </label>
-        <span className="text-[12px] text-bone-faint">Seconds between agent steps; transcript lines take 1.4× longer.</span>
+        <span className="text-[12px] text-bone-faint">Seconds between agent steps. Scenario F keeps its own cue timings.</span>
         {error && <p role="alert" className="w-full rounded-[12px] border border-flare/40 bg-flare/10 px-4 py-3 text-[13px] text-bone">{error}</p>}
       </div>
     </dialog>

@@ -5,6 +5,8 @@ import { LiveLine } from "@/features/live-call/LiveLine";
 import { Wire } from "@/features/wire/Wire";
 import { Dossier } from "@/features/incident-detail/Dossier";
 import { DrillDeck } from "@/features/scenarios/DrillDeck";
+import { CueBanner } from "@/features/scenarios/CueBanner";
+import { useCueHotkey } from "@/features/scenarios/useCueHotkey";
 import { MapLegend } from "@/features/map/MapLegend";
 import { DepartmentDrawer } from "@/features/lens/DepartmentDrawer";
 import { CallLog, TranscriptDrawer } from "@/features/call-log/CallLog";
@@ -21,6 +23,7 @@ export default function App() {
   const [view, setView] = useState<ConsoleView>("board");
   const [openCall, setOpenCall] = useState<string | null>(null);
   const selected = useLive((s) => s.selectedId);
+  const cue = useCueHotkey();   // press V to put the cued call on the line
   useEffect(() => startLiveLink(), []);
   const openDrill = () => setDrill(true);
 
@@ -58,6 +61,7 @@ export default function App() {
         )}
       </div>
 
+      <CueBanner status={cue.status} />
       <DrillDeck open={drill} onClose={() => setDrill(false)} />
       <DepartmentDrawer open={lensOpen} onClose={() => setLensOpen(false)} />
     </div>

@@ -172,7 +172,7 @@ export function LiveLine({ onDrill }: { onDrill: () => void }) {
                 ? `Calls appear here once the agent logs an incident ${deptName} owns or is escalated into.`
                 : "A real call arrives through Twilio and is answered by the realtime agent. Every word and every decision it makes streams here."}
             </p>
-            <button className="btn mt-1 self-start" onClick={onDrill}>Simulate a call</button>
+            <button className="btn mt-1 self-start" onClick={onDrill}>Open a scenario</button>
           </div>
         ) : (
           <ol className="flex flex-col gap-4">

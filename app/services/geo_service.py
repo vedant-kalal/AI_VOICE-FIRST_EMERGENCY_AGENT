@@ -79,7 +79,8 @@ def _gazetteer(raw_text: str, landmark: Optional[str]) -> list[dict]:
             specificity = {"poi": 0.05, "junction": 0.04, "industrial": 0.03, "area": 0.01, "road": 0.0}
             hits.append(
                 {
-                    "formatted": f'{lm["name"]}, {settings.DEFAULT_CITY}',
+                    # A landmark may name its own city (the Baton Rouge drill); otherwise it is in the default city.
+                    "formatted": f'{lm["name"]}, {lm.get("city") or settings.DEFAULT_CITY}',
                     "lat": lm["lat"],
                     "lng": lm["lng"],
                     "confidence": round(min(1.0, score * 0.9 + specificity.get(lm["kind"], 0)), 2),

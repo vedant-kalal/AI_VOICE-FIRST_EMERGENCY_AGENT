@@ -79,3 +79,24 @@ def test_generated_postgres_schema_is_in_sync_with_models():
                  "REFERENCES incidents (id) ON DELETE CASCADE", "CREATE TABLE escalation_attempts",
                  "uq_escalation_attempts_handoff_step", "ix_resources_geog"):
         assert must in sql, must
+
+
+def test_baton_rouge_drill_data_is_wired_up():
+    """Drill F plays outside the default city: the gazetteer must resolve its address WITH its own city,
+    the taxonomy must know the sub-type, and a traffic unit must exist within range."""
+    from app.services import geo_service
+    from app.services.seed import PLACED_BATON_ROUGE
+    from app.utils import taxonomy
+
+    g = geo_service.geocode("450 Laurel Street", "Baton Rouge")
+    assert g["found"] and g["provider"] == "gazetteer"
+    assert g["formatted"].endswith("Baton Rouge")            # not stamped with DEFAULT_CITY
+    assert 30.4 < g["lat"] < 30.5 and -91.3 < g["lng"] < -91.1
+
+    assert "open_manhole" in taxonomy.get_category("road_blockage")["sub_types"]
+    assert "municipal_corp" in taxonomy.category_departments("road_blockage")
+
+    police = [u for u in PLACED_BATON_ROUGE if u[1] == "police_unit"]
+    assert police, "drill F dispatches a police_unit for traffic control"
+    km = geo_service.haversine_km(g["lat"], g["lng"], police[0][2], police[0][3])
+    assert km < 10, f"seeded traffic unit is {km:.1f} km away, outside the drill's search radius"

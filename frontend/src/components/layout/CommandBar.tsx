@@ -140,7 +140,7 @@ export function CommandBar({ onDrill, onLens, view, onView }:
         <Clock />
         <button className="btn btn-flare h-11 shrink-0 px-5 whitespace-nowrap" onClick={onDrill}>
           <Radio size={15} strokeWidth={2.4} />
-          Run a drill
+          Scenarios
         </button>
       </div>
     </header>

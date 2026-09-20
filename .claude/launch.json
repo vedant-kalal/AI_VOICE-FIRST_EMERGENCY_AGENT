@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8010"],
+      "port": 8010
+    },
+    {
+      "name": "dhvani-ui",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}

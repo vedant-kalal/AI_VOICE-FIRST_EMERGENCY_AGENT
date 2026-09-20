@@ -103,4 +103,6 @@ export const SCENARIOS = [
     beats: ["Contradictory, joking answers", "Parked in human review", "Nothing dispatched"] },
   { key: "e", title: "Factory fire", place: "Thaltej Cross Road", cat: "fire",
     beats: ["Three trapped inside", "Nearest fire station lookup", "Live transfer to fire ladder"] },
+  { key: "f", title: "Open manhole", place: "450 Laurel Street, Baton Rouge", cat: "road_blockage",
+    beats: ["Hindi caller, non-emergency", "Outside the default city", "Traffic unit barricades the hole"] },
 ] as const;

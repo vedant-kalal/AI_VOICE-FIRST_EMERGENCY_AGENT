@@ -25,7 +25,8 @@ ENABLE_DEV_ENDPOINTS=true python main.py       # http://localhost:8000/dashboard
 # in another shell — replay a PDF scenario through the REAL tool executor (dashboard animates):
 curl -X POST localhost:8000/api/dev/demo/a     # a = road accident + duplicate merge, b = gas leak,
                                                # c = flood cluster,  d = prank -> human review,
-                                               # e = factory fire -> nearest fire station -> Twilio transfer
+                                               # e = factory fire -> nearest fire station -> Twilio transfer,
+                                               # f = 311-style open manhole, Hindi caller, Baton Rouge
 python -m pytest tests -q                      # 52 tests, offline
 python scripts/generate_schema_sql.py          # regenerate db/schema.sql (PostgreSQL + PostGIS DDL)
 python scripts/test_emergency_instructions.py  # prompt/tool-schema regression + token budget

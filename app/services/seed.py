@@ -51,6 +51,13 @@ PLACED = [
     ("BOAT-A", "flood_rescue_boat", 23.0350, 72.5717, ["boat", "life_jackets"], "available"),
 ]
 
+# Drill F (311-style "missing manhole cover") plays out in downtown Baton Rouge, far outside the default city,
+# so it needs its own municipal crew in range. Numbers use the reserved 555-01xx fictional range.
+PLACED_BATON_ROUGE = [
+    ("PU-BR-1", "police_unit", 30.4523, -91.1898, ["patrol", "traffic"], "available", "+12255550101"),
+    ("TOW-BR-1", "tow_truck", 30.4455, -91.1825, ["light_tow"], "available", "+12255550102"),
+]
+
 HOSPITALS = [
     ("Demo Hospital - Sola", 23.0771, 72.5180, dict(beds=60, available_beds=9, icu=8, available_icu=2, trauma=True, burn_unit=False, toxicology=False, cardiac=True)),
     ("Demo Hospital - Vastrapur", 23.0369, 72.5288, dict(beds=40, available_beds=6, icu=4, available_icu=1, trauma=True, burn_unit=False, toxicology=True, cardiac=True)),
@@ -79,16 +86,18 @@ def seed(db: Session, reset: bool = True, extra_random: int = 22, rng_seed: int 
     now = datetime.now(timezone.utc)
     n = 0
 
-    def add(callsign, rtype, lat, lng, caps, status):
+    def add(callsign, rtype, lat, lng, caps, status, contact=None):
         nonlocal n
         n += 1
         db.add(Resource(callsign=callsign, type=rtype, status=status, capabilities=caps, lat=lat, lng=lng,
                         department_key=UNIT_DEPARTMENT[rtype],
                         speed_kmh=SPEED[rtype], queue_load=rng.choice([0, 0, 0, 1, 2]),
-                        contact_number=f"+91900000{n:04d}", last_updated=now, is_synthetic=True))
+                        contact_number=contact or f"+91900000{n:04d}", last_updated=now, is_synthetic=True))
 
     for callsign, rtype, lat, lng, caps, status in PLACED:
         add(callsign, rtype, lat, lng, caps, status)
+    for callsign, rtype, lat, lng, caps, status, contact in PLACED_BATON_ROUGE:
+        add(callsign, rtype, lat, lng, caps, status, contact)
 
     counters: dict[str, int] = {}
     types = (["ambulance"] * 6 + ["fire_truck"] * 4 + ["police_unit"] * 5 + ["rescue_team"] * 3

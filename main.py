@@ -43,12 +43,28 @@ def _bootstrap_local_db() -> None:
     from app.models.resource import Resource
     from app.services.seed import seed
 
+    from app.services.seed import PLACED_BATON_ROUGE, SPEED, UNIT_DEPARTMENT
+
     Base.metadata.create_all(engine)
     db = SessionLocal()
     try:
         if db.query(Resource).count() == 0:
             logger.info("Empty local database — seeding synthetic demo data: %s", seed(db))
             db.commit()
+        else:
+            # Databases seeded before drill F existed have no crew near Baton Rouge; top them up so the
+            # drill can dispatch. Idempotent: only callsigns that are missing are added.
+            added = 0
+            for callsign, rtype, lat, lng, caps, status, contact in PLACED_BATON_ROUGE:
+                if db.query(Resource).filter(Resource.callsign == callsign).first():
+                    continue
+                db.add(Resource(callsign=callsign, type=rtype, status=status, capabilities=caps, lat=lat,
+                                lng=lng, department_key=UNIT_DEPARTMENT[rtype], speed_kmh=SPEED[rtype],
+                                queue_load=0, contact_number=contact, is_synthetic=True))
+                added += 1
+            if added:
+                logger.info("Added %d synthetic unit(s) for the out-of-city drill", added)
+                db.commit()
     finally:
         db.close()
 

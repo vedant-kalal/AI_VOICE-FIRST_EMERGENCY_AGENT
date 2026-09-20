@@ -2,28 +2,84 @@
   "_notice": "Demo data. Safety protocols are standard pre-arrival guidance for a hackathon prototype and MUST be reviewed by medical/fire/police authorities before any real-world use.",
   "critical_severity_default": 85,
   "departments": {
-    "supervisor": {"name": "Duty Supervisor", "contact": "supervisor-desk"},
-    "fire_dept": {"name": "Fire & Rescue Services", "contact": "fire-control-room"},
-    "hazmat": {"name": "Hazmat / Industrial Safety Board", "contact": "hazmat-cell"},
-    "police": {"name": "Police Department", "contact": "police-control-room"},
-    "ems": {"name": "Emergency Medical Services (EMS)", "contact": "ems-dispatch"},
-    "traffic_police": {"name": "Traffic Police", "contact": "traffic-control"},
-    "disaster_management": {"name": "Disaster Management Authority", "contact": "dma-eoc"},
-    "municipal_corp": {"name": "Municipal Corporation", "contact": "municipal-control"},
-    "utility_board": {"name": "Electricity / Gas / Water Board", "contact": "utility-control"},
-    "pollution_control": {"name": "Pollution Control Board", "contact": "pcb-desk"},
-    "forest_dept": {"name": "Forest Department / Animal Control", "contact": "forest-control"}
+    "supervisor": {
+      "name": "Duty Supervisor",
+      "contact": "supervisor-desk"
+    },
+    "fire_dept": {
+      "name": "Fire & Rescue Services",
+      "contact": "fire-control-room"
+    },
+    "hazmat": {
+      "name": "Hazmat / Industrial Safety Board",
+      "contact": "hazmat-cell"
+    },
+    "police": {
+      "name": "Police Department",
+      "contact": "police-control-room"
+    },
+    "ems": {
+      "name": "Emergency Medical Services (EMS)",
+      "contact": "ems-dispatch"
+    },
+    "traffic_police": {
+      "name": "Traffic Police",
+      "contact": "traffic-control"
+    },
+    "disaster_management": {
+      "name": "Disaster Management Authority",
+      "contact": "dma-eoc"
+    },
+    "municipal_corp": {
+      "name": "Municipal Corporation",
+      "contact": "municipal-control"
+    },
+    "utility_board": {
+      "name": "Electricity / Gas / Water Board",
+      "contact": "utility-control"
+    },
+    "pollution_control": {
+      "name": "Pollution Control Board",
+      "contact": "pcb-desk"
+    },
+    "forest_dept": {
+      "name": "Forest Department / Animal Control",
+      "contact": "forest-control"
+    }
   },
   "categories": {
     "fire": {
       "label": "Fire",
-      "sub_types": ["structural", "industrial", "wildfire", "vehicle_fire", "electrical_fire"],
-      "departments": ["fire_dept"],
-      "escalate_to": ["fire_dept", "ems"],
+      "sub_types": [
+        "structural",
+        "industrial",
+        "wildfire",
+        "vehicle_fire",
+        "electrical_fire"
+      ],
+      "departments": [
+        "fire_dept"
+      ],
+      "escalate_to": [
+        "fire_dept",
+        "ems"
+      ],
       "resources": [
-        {"type": "fire_truck", "required_equipment": [], "note": "always"},
-        {"type": "ambulance", "required_equipment": [], "note": "if anyone is hurt, burned or has inhaled smoke"},
-        {"type": "hazmat_team", "required_equipment": [], "note": "only if chemicals / industrial site is involved"}
+        {
+          "type": "fire_truck",
+          "required_equipment": [],
+          "note": "always"
+        },
+        {
+          "type": "ambulance",
+          "required_equipment": [],
+          "note": "if anyone is hurt, burned or has inhaled smoke"
+        },
+        {
+          "type": "hazmat_team",
+          "required_equipment": [],
+          "note": "only if chemicals / industrial site is involved"
+        }
       ],
       "base_severity": 30,
       "duplicate_radius_m": 400,
@@ -44,13 +100,37 @@
     },
     "flood": {
       "label": "Flood",
-      "sub_types": ["flash_flood", "river_overflow", "urban_waterlogging", "dam_related"],
-      "departments": ["disaster_management", "municipal_corp"],
-      "escalate_to": ["disaster_management", "municipal_corp", "ems"],
+      "sub_types": [
+        "flash_flood",
+        "river_overflow",
+        "urban_waterlogging",
+        "dam_related"
+      ],
+      "departments": [
+        "disaster_management",
+        "municipal_corp"
+      ],
+      "escalate_to": [
+        "disaster_management",
+        "municipal_corp",
+        "ems"
+      ],
       "resources": [
-        {"type": "flood_rescue_boat", "required_equipment": [], "note": "when people are stranded by deep or moving water"},
-        {"type": "rescue_team", "required_equipment": [], "note": "when people are trapped"},
-        {"type": "ambulance", "required_equipment": [], "note": "if anyone is hurt or unwell"}
+        {
+          "type": "flood_rescue_boat",
+          "required_equipment": [],
+          "note": "when people are stranded by deep or moving water"
+        },
+        {
+          "type": "rescue_team",
+          "required_equipment": [],
+          "note": "when people are trapped"
+        },
+        {
+          "type": "ambulance",
+          "required_equipment": [],
+          "note": "if anyone is hurt or unwell"
+        }
       ],
       "base_severity": 25,
       "duplicate_radius_m": 1500,
@@ -70,14 +150,44 @@
     },
     "road_accident": {
       "label": "Road Accident",
-      "sub_types": ["collision", "hit_and_run", "pile_up", "pedestrian_struck"],
-      "departments": ["traffic_police", "ems"],
-      "escalate_to": ["traffic_police", "ems", "fire_dept"],
+      "sub_types": [
+        "collision",
+        "hit_and_run",
+        "pile_up",
+        "pedestrian_struck"
+      ],
+      "departments": [
+        "traffic_police",
+        "ems"
+      ],
+      "escalate_to": [
+        "traffic_police",
+        "ems",
+        "fire_dept"
+      ],
       "resources": [
-        {"type": "ambulance", "required_equipment": [], "note": "always if anyone is hurt"},
-        {"type": "rescue_team", "required_equipment": ["jaws_of_life"], "note": "if anyone is trapped in a vehicle"},
-        {"type": "police_unit", "required_equipment": [], "note": "traffic control / hit-and-run"},
-        {"type": "tow_truck", "required_equipment": [], "note": "only when vehicles block the road and nobody is trapped"}
+        {
+          "type": "ambulance",
+          "required_equipment": [],
+          "note": "always if anyone is hurt"
+        },
+        {
+          "type": "rescue_team",
+          "required_equipment": [
+            "jaws_of_life"
+          ],
+          "note": "if anyone is trapped in a vehicle"
+        },
+        {
+          "type": "police_unit",
+          "required_equipment": [],
+          "note": "traffic control / hit-and-run"
+        },
+        {
+          "type": "tow_truck",
+          "required_equipment": [],
+          "note": "only when vehicles block the road and nobody is trapped"
+        }
       ],
       "base_severity": 30,
       "duplicate_radius_m": 500,
@@ -103,13 +213,37 @@
     },
     "road_blockage": {
       "label": "Road Blockage / Obstruction",
-      "sub_types": ["fallen_tree", "landslide_debris", "stalled_vehicle", "protest_blockage"],
-      "departments": ["municipal_corp", "traffic_police"],
-      "escalate_to": ["municipal_corp", "traffic_police"],
+      "sub_types": [
+        "fallen_tree",
+        "landslide_debris",
+        "stalled_vehicle",
+        "protest_blockage",
+        "open_manhole"
+      ],
+      "departments": [
+        "municipal_corp",
+        "traffic_police"
+      ],
+      "escalate_to": [
+        "municipal_corp",
+        "traffic_police"
+      ],
       "resources": [
-        {"type": "police_unit", "required_equipment": [], "note": "traffic control"},
-        {"type": "tow_truck", "required_equipment": [], "note": "stalled vehicle"},
-        {"type": "rescue_team", "required_equipment": [], "note": "only for landslide debris / tree removal with people at risk"}
+        {
+          "type": "police_unit",
+          "required_equipment": [],
+          "note": "traffic control"
+        },
+        {
+          "type": "tow_truck",
+          "required_equipment": [],
+          "note": "stalled vehicle"
+        },
+        {
+          "type": "rescue_team",
+          "required_equipment": [],
+          "note": "only for landslide debris / tree removal with people at risk"
+        }
       ],
       "base_severity": 10,
       "duplicate_radius_m": 400,
@@ -127,11 +261,27 @@
     },
     "medical": {
       "label": "Medical Emergency",
-      "sub_types": ["cardiac", "stroke", "seizure", "childbirth", "poisoning", "allergic_reaction", "other_medical"],
-      "departments": ["ems"],
-      "escalate_to": ["ems"],
+      "sub_types": [
+        "cardiac",
+        "stroke",
+        "seizure",
+        "childbirth",
+        "poisoning",
+        "allergic_reaction",
+        "other_medical"
+      ],
+      "departments": [
+        "ems"
+      ],
+      "escalate_to": [
+        "ems"
+      ],
       "resources": [
-        {"type": "ambulance", "required_equipment": [], "note": "always"}
+        {
+          "type": "ambulance",
+          "required_equipment": [],
+          "note": "always"
+        }
       ],
       "base_severity": 35,
       "duplicate_radius_m": 150,
@@ -172,14 +322,44 @@
     },
     "industrial_chemical": {
       "label": "Industrial / Chemical Accident",
-      "sub_types": ["gas_leak", "factory_explosion", "chemical_spill"],
-      "departments": ["fire_dept", "hazmat", "pollution_control"],
-      "escalate_to": ["fire_dept", "hazmat", "police"],
+      "sub_types": [
+        "gas_leak",
+        "factory_explosion",
+        "chemical_spill"
+      ],
+      "departments": [
+        "fire_dept",
+        "hazmat",
+        "pollution_control"
+      ],
+      "escalate_to": [
+        "fire_dept",
+        "hazmat",
+        "police"
+      ],
       "resources": [
-        {"type": "hazmat_team", "required_equipment": [], "note": "always"},
-        {"type": "fire_truck", "required_equipment": ["industrial_fire_equipment"], "note": "always - prefer industrial-capable units"},
-        {"type": "ambulance", "required_equipment": [], "note": "if anyone is affected"},
-        {"type": "police_unit", "required_equipment": [], "note": "cordon / evacuation"}
+        {
+          "type": "hazmat_team",
+          "required_equipment": [],
+          "note": "always"
+        },
+        {
+          "type": "fire_truck",
+          "required_equipment": [
+            "industrial_fire_equipment"
+          ],
+          "note": "always - prefer industrial-capable units"
+        },
+        {
+          "type": "ambulance",
+          "required_equipment": [],
+          "note": "if anyone is affected"
+        },
+        {
+          "type": "police_unit",
+          "required_equipment": [],
+          "note": "cordon / evacuation"
+        }
       ],
       "base_severity": 40,
       "duplicate_radius_m": 800,
@@ -199,13 +379,38 @@
     },
     "building_collapse": {
       "label": "Building Collapse",
-      "sub_types": ["structural_failure", "construction_accident", "earthquake_damage"],
-      "departments": ["disaster_management", "municipal_corp"],
-      "escalate_to": ["disaster_management", "fire_dept", "ems"],
+      "sub_types": [
+        "structural_failure",
+        "construction_accident",
+        "earthquake_damage"
+      ],
+      "departments": [
+        "disaster_management",
+        "municipal_corp"
+      ],
+      "escalate_to": [
+        "disaster_management",
+        "fire_dept",
+        "ems"
+      ],
       "resources": [
-        {"type": "rescue_team", "required_equipment": ["structural_rescue"], "note": "always"},
-        {"type": "ambulance", "required_equipment": [], "note": "always if anyone is hurt"},
-        {"type": "fire_truck", "required_equipment": [], "note": "if fire, gas or dust hazard"}
+        {
+          "type": "rescue_team",
+          "required_equipment": [
+            "structural_rescue"
+          ],
+          "note": "always"
+        },
+        {
+          "type": "ambulance",
+          "required_equipment": [],
+          "note": "always if anyone is hurt"
+        },
+        {
+          "type": "fire_truck",
+          "required_equipment": [],
+          "note": "if fire, gas or dust hazard"
+        }
       ],
       "base_severity": 50,
       "duplicate_radius_m": 500,
@@ -225,12 +430,30 @@
     },
     "natural_disaster": {
       "label": "Natural Disaster",
-      "sub_types": ["earthquake", "cyclone", "landslide", "heatwave"],
-      "departments": ["disaster_management"],
-      "escalate_to": ["disaster_management", "supervisor"],
+      "sub_types": [
+        "earthquake",
+        "cyclone",
+        "landslide",
+        "heatwave"
+      ],
+      "departments": [
+        "disaster_management"
+      ],
+      "escalate_to": [
+        "disaster_management",
+        "supervisor"
+      ],
       "resources": [
-        {"type": "rescue_team", "required_equipment": [], "note": "people trapped or stranded"},
-        {"type": "ambulance", "required_equipment": [], "note": "if anyone is hurt"}
+        {
+          "type": "rescue_team",
+          "required_equipment": [],
+          "note": "people trapped or stranded"
+        },
+        {
+          "type": "ambulance",
+          "required_equipment": [],
+          "note": "if anyone is hurt"
+        }
       ],
       "base_severity": 45,
       "duplicate_radius_m": 3000,
@@ -248,12 +471,31 @@
     },
     "crime": {
       "label": "Crime / Violence in Progress",
-      "sub_types": ["assault", "robbery", "domestic_violence", "active_shooter"],
-      "departments": ["police"],
-      "escalate_to": ["police", "ems", "supervisor"],
+      "sub_types": [
+        "assault",
+        "robbery",
+        "domestic_violence",
+        "active_shooter"
+      ],
+      "departments": [
+        "police"
+      ],
+      "escalate_to": [
+        "police",
+        "ems",
+        "supervisor"
+      ],
       "resources": [
-        {"type": "police_unit", "required_equipment": [], "note": "always"},
-        {"type": "ambulance", "required_equipment": [], "note": "only if someone is hurt - keep it staged until police clear the scene"}
+        {
+          "type": "police_unit",
+          "required_equipment": [],
+          "note": "always"
+        },
+        {
+          "type": "ambulance",
+          "required_equipment": [],
+          "note": "only if someone is hurt - keep it staged until police clear the scene"
+        }
       ],
       "base_severity": 40,
       "duplicate_radius_m": 300,
@@ -273,12 +515,29 @@
     },
     "utility_failure": {
       "label": "Utility Failure",
-      "sub_types": ["power_line_down", "gas_pipeline_leak", "water_main_burst"],
-      "departments": ["utility_board"],
-      "escalate_to": ["utility_board", "fire_dept"],
+      "sub_types": [
+        "power_line_down",
+        "gas_pipeline_leak",
+        "water_main_burst"
+      ],
+      "departments": [
+        "utility_board"
+      ],
+      "escalate_to": [
+        "utility_board",
+        "fire_dept"
+      ],
       "resources": [
-        {"type": "rescue_team", "required_equipment": [], "note": "only if people are at risk"},
-        {"type": "fire_truck", "required_equipment": [], "note": "if there is a fire or gas explosion risk"}
+        {
+          "type": "rescue_team",
+          "required_equipment": [],
+          "note": "only if people are at risk"
+        },
+        {
+          "type": "fire_truck",
+          "required_equipment": [],
+          "note": "if there is a fire or gas explosion risk"
+        }
       ],
       "base_severity": 20,
       "duplicate_radius_m": 600,
@@ -297,13 +556,37 @@
     },
     "missing_person": {
       "label": "Missing Person / Search & Rescue",
-      "sub_types": ["missing_child", "lost_in_flood", "lost_in_forest"],
-      "departments": ["police", "disaster_management"],
-      "escalate_to": ["police", "disaster_management"],
+      "sub_types": [
+        "missing_child",
+        "lost_in_flood",
+        "lost_in_forest"
+      ],
+      "departments": [
+        "police",
+        "disaster_management"
+      ],
+      "escalate_to": [
+        "police",
+        "disaster_management"
+      ],
       "resources": [
-        {"type": "police_unit", "required_equipment": [], "note": "always"},
-        {"type": "rescue_team", "required_equipment": ["search_dog"], "note": "search & rescue"},
-        {"type": "helicopter", "required_equipment": [], "note": "only for large or remote searches"}
+        {
+          "type": "police_unit",
+          "required_equipment": [],
+          "note": "always"
+        },
+        {
+          "type": "rescue_team",
+          "required_equipment": [
+            "search_dog"
+          ],
+          "note": "search & rescue"
+        },
+        {
+          "type": "helicopter",
+          "required_equipment": [],
+          "note": "only for large or remote searches"
+        }
       ],
       "base_severity": 30,
       "duplicate_radius_m": 1500,
@@ -321,12 +604,27 @@
     },
     "animal_rescue": {
       "label": "Animal-related Emergency",
-      "sub_types": ["wild_animal_in_populated_area", "livestock_accident"],
-      "departments": ["forest_dept"],
-      "escalate_to": ["forest_dept"],
+      "sub_types": [
+        "wild_animal_in_populated_area",
+        "livestock_accident"
+      ],
+      "departments": [
+        "forest_dept"
+      ],
+      "escalate_to": [
+        "forest_dept"
+      ],
       "resources": [
-        {"type": "rescue_team", "required_equipment": [], "note": "wildlife / animal handling"},
-        {"type": "police_unit", "required_equipment": [], "note": "crowd or traffic control if needed"}
+        {
+          "type": "rescue_team",
+          "required_equipment": [],
+          "note": "wildlife / animal handling"
+        },
+        {
+          "type": "police_unit",
+          "required_equipment": [],
+          "note": "crowd or traffic control if needed"
+        }
       ],
       "base_severity": 10,
       "duplicate_radius_m": 600,
@@ -344,12 +642,29 @@
     },
     "public_disturbance": {
       "label": "Public Disturbance",
-      "sub_types": ["riot", "stampede_risk", "uncontrolled_crowd"],
-      "departments": ["police"],
-      "escalate_to": ["police", "supervisor"],
+      "sub_types": [
+        "riot",
+        "stampede_risk",
+        "uncontrolled_crowd"
+      ],
+      "departments": [
+        "police"
+      ],
+      "escalate_to": [
+        "police",
+        "supervisor"
+      ],
       "resources": [
-        {"type": "police_unit", "required_equipment": [], "note": "always - crowd control"},
-        {"type": "ambulance", "required_equipment": [], "note": "if anyone is hurt"}
+        {
+          "type": "police_unit",
+          "required_equipment": [],
+          "note": "always - crowd control"
+        },
+        {
+          "type": "ambulance",
+          "required_equipment": [],
+          "note": "if anyone is hurt"
+        }
       ],
       "base_severity": 25,
       "duplicate_radius_m": 500,
@@ -367,9 +682,15 @@
     },
     "other": {
       "label": "Other Emergency",
-      "sub_types": ["unspecified"],
-      "departments": ["supervisor"],
-      "escalate_to": ["supervisor"],
+      "sub_types": [
+        "unspecified"
+      ],
+      "departments": [
+        "supervisor"
+      ],
+      "escalate_to": [
+        "supervisor"
+      ],
       "resources": [],
       "base_severity": 10,
       "duplicate_radius_m": 300,
@@ -385,9 +706,35 @@
     }
   },
   "protocol_keywords": {
-    "cpr": ["not breathing", "no pulse", "unconscious", "cpr", "cardiac arrest", "collapsed", "unresponsive"],
-    "bleeding": ["bleeding", "blood", "wound", "stabbed", "cut"],
-    "choking": ["choking", "choked", "cannot breathe food", "swallowed"],
-    "childbirth": ["labour", "labor", "giving birth", "childbirth", "contractions", "baby is coming"]
+    "cpr": [
+      "not breathing",
+      "no pulse",
+      "unconscious",
+      "cpr",
+      "cardiac arrest",
+      "collapsed",
+      "unresponsive"
+    ],
+    "bleeding": [
+      "bleeding",
+      "blood",
+      "wound",
+      "stabbed",
+      "cut"
+    ],
+    "choking": [
+      "choking",
+      "choked",
+      "cannot breathe food",
+      "swallowed"
+    ],
+    "childbirth": [
+      "labour",
+      "labor",
+      "giving birth",
+      "childbirth",
+      "contractions",
+      "baby is coming"
+    ]
   }
 }
