@@ -163,6 +163,33 @@ body {
 .m-fac svg { width: 12px; height: 12px; }
 .m-fac[data-hot="true"] { color: var(--color-sage); opacity: 1; filter: drop-shadow(0 0 6px var(--color-sage)); }
 
+/* Road closure: a barricaded scene. The ring itself is a map layer; this is just its caption.
+   Sodium = "work zone", the same colour the console uses for waiting-on-a-human. */
+.m-closure-cap {
+  pointer-events: none; white-space: nowrap;
+  font: 500 9.5px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-sodium);
+  background: rgb(11 12 14 / 0.85); border: 1px solid color-mix(in srgb, var(--color-sodium) 35%, transparent);
+  padding: 4px 6px; border-radius: 6px;
+}
+
+.m-barricade { pointer-events: none; position: relative; width: 16px; height: 12px; }
+/* Three nested boxes, one owner each: MapLibre positions the root, GSAP scales .body, CSS tilts .tilt. */
+.m-barricade .body { position: absolute; inset: 0; display: block; transform-origin: center; }
+.m-barricade .tilt {
+  position: absolute; inset: 0; display: block;
+  transform: rotate(var(--tilt, 0deg)); transform-origin: center;
+}
+.m-barricade .body .plank {
+  position: absolute; left: 0; width: 16px; height: 3.5px; border-radius: 1px;
+  background: repeating-linear-gradient(115deg, var(--color-sodium) 0 3px, #2b2116 3px 6px);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--color-sodium) 45%, transparent);
+}
+.m-barricade .plank:first-child { top: 0; }
+.m-barricade .plank + .plank { top: 5.5px; }
+.m-barricade .legs {
+  position: absolute; top: 3px; left: 7px; width: 2px; height: 9px; background: #6b6860; border-radius: 1px;
+}
+
 .m-sweep { pointer-events: none; border-radius: 999px; position: relative; }
 .m-sweep .disc { position: absolute; inset: 0; border-radius: 999px; border: 1px solid rgb(142 197 255 / 0.5);
   background: radial-gradient(circle, rgb(142 197 255 / 0.10), rgb(142 197 255 / 0.02) 70%, transparent 71%); }

@@ -315,7 +315,7 @@ export function CallLog({ openId, onOpen }: { openId: string | null; onOpen: (id
             </p>
             <p className="max-w-[44ch] text-[13px] leading-relaxed text-bone-dim">
               {q ? "Try a phone number, a call SID, an incident number or an area name."
-                 : "Run a drill from the live board, or widen the time range."}
+                 : "Open a scenario from the live board, or widen the time range."}
             </p>
           </div>
         ) : (

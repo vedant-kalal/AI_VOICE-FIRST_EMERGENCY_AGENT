@@ -182,7 +182,7 @@ function EmptyQueue({ tab, onDrill }: { tab: Tab; onDrill: () => void }) {
       <PhoneCall size={20} className="text-bone-faint" />
       <p className="font-serif text-[28px] leading-[1.05] italic text-bone">{copy[0]}</p>
       <p className="max-w-[30ch] text-[13px] leading-relaxed text-bone-dim">{copy[1]}</p>
-      {tab === "active" && <button className="btn mt-2" onClick={onDrill}>Run a drill</button>}
+      {tab === "active" && <button className="btn mt-2" onClick={onDrill}>Open a scenario</button>}
     </div>
   );
 }

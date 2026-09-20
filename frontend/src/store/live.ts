@@ -11,7 +11,9 @@ export type Fx =
       rays: { lat: number; lng: number; decision: string; callsign: string }[] }
   | { kind: "places"; lat: number; lng: number; radiusKm: number; label: string;
       points: { lat: number; lng: number; name: string; best: boolean }[] }
-  | { kind: "fly"; lat: number; lng: number; zoom?: number };
+  | { kind: "fly"; lat: number; lng: number; zoom?: number }
+  /** A unit is on scene at a road obstruction: show the scene being barricaded off. */
+  | { kind: "barricade"; lat: number; lng: number; callsign: string; label: string };
 
 type FxListener = (fx: Fx) => void;
 const fxListeners = new Set<FxListener>();
@@ -298,8 +300,17 @@ export const useLive = create<LiveState>((set, get) => {
           const a = s.assignments[d.assignment_id];
           if (a && a.status !== d.assignment_status) {
             get().upsertAssignment({ id: a.id, status: d.assignment_status });
-            if (d.assignment_status === "arrived")
-              wire({ ts: ev.ts, tone: "sage", title: `${d.callsign} on scene`, detail: incNo(d.incident_id), incidentId: d.incident_id });
+            if (d.assignment_status === "arrived") {
+              const inc = s.incidents[d.incident_id] as Incident | undefined;
+              const blockage = inc?.category === "road_blockage";
+              wire({ ts: ev.ts, tone: "sage",
+                     title: blockage ? `${d.callsign} barricading the scene` : `${d.callsign} on scene`,
+                     detail: incNo(d.incident_id), incidentId: d.incident_id });
+              // Traffic control at a road obstruction is the crew closing the hazard off — show it.
+              if (fresh && blockage && inc?.lat != null)
+                fx.emit({ kind: "barricade", lat: inc.lat, lng: inc.lng as number, callsign: d.callsign,
+                          label: inc.sub_type ? inc.sub_type.replaceAll("_", " ") : "road hazard" });
+            }
           }
           break;
         }

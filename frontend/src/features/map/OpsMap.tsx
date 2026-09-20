@@ -73,6 +73,8 @@ export function OpsMap() {
     const facM = new Map<string, Marker>();
     let ready = false;
     let dashTimer: number | undefined;
+    const closures: { type: "Feature"; properties: Record<string, never>;
+                      geometry: { type: "Polygon"; coordinates: [number, number][][] } }[] = [];
 
     // ── incidents ──
     const syncIncidents = (incidents: Record<string, Incident>, selectedId: string | null) => {
@@ -202,6 +204,64 @@ export function OpsMap() {
           .to(o, { v: 0, duration: 0.8, onUpdate: setRay }, 3.6);
         return;
       }
+      if (e.kind === "barricade") {
+        // Six barricades set in a ring around the hazard, dropping in one after another, then a
+        // closed-off disc and the crew callsign. Purely a read of "unit arrived at a road obstruction".
+        const RING_M = 26;                       // barricades stand a few metres off the hazard
+        const dLat = RING_M / 111_320;
+        const dLng = RING_M / (111_320 * Math.cos((e.lat * Math.PI) / 180));
+        const marks: maplibregl.Marker[] = [];
+
+        // The closed-off area is a geographic circle in the "closure" source: it stays centred on the hazard
+        // at any zoom or pitch, which a tilted DOM element cannot do (perspective shifts its centre).
+        const src = map.getSource("closure") as GeoJSONSource | undefined;
+        if (src) {
+          const ring: [number, number][] = [];
+          for (let i = 0; i <= 64; i++) {
+            const a = (i / 64) * Math.PI * 2;
+            ring.push([e.lng + Math.cos(a) * dLng * 1.15, e.lat + Math.sin(a) * dLat * 1.15]);
+          }
+          closures.push({ type: "Feature" as const, properties: {},
+                          geometry: { type: "Polygon" as const, coordinates: [ring] } });
+          src.setData({ type: "FeatureCollection", features: closures });
+        }
+
+        const cap = document.createElement("div");
+        cap.className = "m-closure-cap";
+        cap.textContent = `${e.callsign} · ${e.label}`;
+        marks.push(new maplibregl.Marker({ element: cap, anchor: "bottom", offset: [0, -16] })
+          .setLngLat([e.lng, e.lat]).addTo(map));
+
+        const bars: HTMLElement[] = [];
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          const el = document.createElement("div");
+          el.className = "m-barricade";
+          // .body is the animated child: never touch the marker root, MapLibre writes its transform.
+          el.innerHTML = '<span class="body"><span class="tilt"><span class="plank"></span><span class="plank"></span><span class="legs"></span></span></span>';
+          el.style.setProperty("--tilt", `${(a * 180) / Math.PI + 90}deg`);
+          // Viewport-aligned on purpose: a pitch-aligned DOM marker is drawn with perspective, which shifts
+          // it away from its own anchor. Billboards sit exactly on the point, like the incident pin does.
+          marks.push(new maplibregl.Marker({ element: el })
+            .setLngLat([e.lng + Math.cos(a) * dLng, e.lat + Math.sin(a) * dLat]).addTo(map));
+          bars.push(el.firstElementChild as HTMLElement);
+        }
+
+        if (reduce) return;   // markers stay put; no drop-in, no fade
+        const fade = { v: 0 };
+        const paint = () => {
+          if (!map.getLayer("closure-fill")) return;
+          map.setPaintProperty("closure-fill", "fill-opacity", fade.v * 0.12);
+          map.setPaintProperty("closure-line", "line-opacity", fade.v * 0.85);
+        };
+        const tl = gsap.timeline();
+        tl.to(fade, { v: 1, duration: 0.7, ease: "expo.out", onUpdate: paint })
+          // .body carries only GSAP's scale/opacity; the tilt lives on the .tilt child, so they never collide
+          .fromTo(bars, { opacity: 0, scale: 0.45 },
+                  { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(2.4)", stagger: 0.09 }, 0.15)
+          .fromTo(cap, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power3.out" }, 0.7);
+        return;
+      }
       if (e.kind === "places") {
         const hot: HTMLElement[] = [];
         for (const p of e.points.slice(0, 5)) {
@@ -209,9 +269,10 @@ export function OpsMap() {
           el.className = "pointer-events-none";
           el.innerHTML = `<div style="display:flex;align-items:center;gap:6px;transform:translateY(-18px);font:500 10px/1 var(--font-mono);color:${p.best ? "var(--color-sage)" : "var(--color-bone-dim)"};background:rgb(11 12 14 / .85);border:1px solid ${p.best ? "rgb(156 197 161 / .5)" : "var(--color-line)"};padding:5px 7px;border-radius:7px;white-space:nowrap">${p.best ? "◆ " : ""}${p.name.slice(0, 34)}</div>`;
           const mk = new maplibregl.Marker({ element: el }).setLngLat([p.lng, p.lat]).addTo(map);
-          hot.push(el);
-          gsap.fromTo(el, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: reduce ? 0 : 0.35, ease: "power3.out", delay: hot.length * 0.06 });
-          gsap.to(el, { opacity: 0, duration: 0.4, delay: 5, onComplete: () => mk.remove() });
+          const card = el.firstElementChild as HTMLElement;   // animate the card, not the marker root
+          hot.push(card);
+          gsap.fromTo(card, { opacity: 0 }, { opacity: 1, duration: reduce ? 0 : 0.35, ease: "power3.out", delay: hot.length * 0.06 });
+          gsap.to(card, { opacity: 0, duration: 0.4, delay: 5, onComplete: () => mk.remove() });
         }
       }
     };
@@ -230,6 +291,11 @@ export function OpsMap() {
         paint: { "line-color": ["case", ["get", "pending"], "#f6c453", "#ff8a3d"], "line-width": 8, "line-opacity": 0.14, "line-blur": 6 } });
       map.addLayer({ id: "links", type: "line", source: "links", layout: { "line-cap": "round" },
         paint: { "line-color": ["case", ["get", "pending"], "#f6c453", "#ff8a3d"], "line-width": 1.6, "line-dasharray": [0, 2, 3] } });
+      map.addSource("closure", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      map.addLayer({ id: "closure-fill", type: "fill", source: "closure",
+        paint: { "fill-color": "#f6c453", "fill-opacity": 0 } });
+      map.addLayer({ id: "closure-line", type: "line", source: "closure",
+        paint: { "line-color": "#f6c453", "line-width": 1.5, "line-dasharray": [2, 2], "line-opacity": 0 } });
       map.addSource("rays", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addLayer({ id: "rays", type: "line", source: "rays",
         paint: { "line-color": ["match", ["get", "d"], "selected", "#8ec5ff", "candidate", "#5f7c99", "#3a3d42"],

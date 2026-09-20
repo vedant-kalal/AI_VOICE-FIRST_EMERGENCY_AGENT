@@ -59,6 +59,28 @@ describe("live store", () => {
   });
 });
 
+describe("road-closure effect", () => {
+  it("shows barricades when a unit reaches a road blockage, and not for other categories", () => {
+    const seen = vi.fn();
+    const off = fx.on(seen);
+    const arrive = (category: string) => {
+      useLive.setState({ incidents: {}, assignments: {} });
+      const { apply } = useLive.getState();
+      apply(ev("incident_created", inc({ category, sub_type: "open_manhole" })), true);
+      apply(ev("assignment_created", { assignment_id: "a1", incident_id: "i1", resource_id: "r1",
+                                       callsign: "PU-BR-1", type: "police_unit", status: "dispatched" }), true);
+      apply(ev("resource_moved", { resource_id: "r1", callsign: "PU-BR-1", lat: 30.4489, lng: -91.1861,
+                                   status: "on_scene", assignment_id: "a1", assignment_status: "arrived",
+                                   incident_id: "i1" }), false);
+    };
+    arrive("fire");
+    expect(seen).not.toHaveBeenCalledWith(expect.objectContaining({ kind: "barricade" }));
+    arrive("road_blockage");
+    expect(seen).toHaveBeenCalledWith(expect.objectContaining({ kind: "barricade", callsign: "PU-BR-1", label: "open manhole" }));
+    off();
+  });
+});
+
 describe("department lens", () => {
   const tax: TaxonomyMap = {
     departments: [{ key: "fire_dept", label: "Fire & Rescue Services" }, { key: "ems", label: "EMS" }],

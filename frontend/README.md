@@ -132,7 +132,9 @@ Once it's pushed, tell the team. Everyone else then runs `git pull` → `cd fron
 | Review tab → Genuine / ✕ | `POST /api/incidents/{id}/review` |
 | Mark resolved / Close | `POST /api/incidents/{id}/status` |
 | Approve / Reject dispatch (backend `DISPATCH_MODE=approval`) | `POST /api/assignments/{id}/approve` · `/reject` |
-| Run a drill | `POST /api/dev/demo/{a–e}?pace=` |
+| Run a drill | `POST /api/dev/demo/{a–f}?pace=` |
+| Department lens | `GET /api/taxonomy` (departments ↔ categories), `escalated_to` on each incident |
+| Call log + transcript drawer | `GET /api/calls?department=…`, `GET /api/calls/{id}` |
 
 The backend replays its last 200 events to each new WebSocket. The UI uses events older than 4 s to rebuild
 transcripts and the wire, but never replays their animations.
@@ -154,7 +156,24 @@ src/
     incident-detail/          dossier drawer
     wire/                     event strip
     scenarios/                drill launcher
+    lens/                     access view: super admin vs one department
+    call-log/                 past calls + transcript drawer
 ```
+
+## Drills
+
+| Drill | Story |
+|---|---|
+| A | Highway crash — an earlier caller already reported it, so the live call merges as a duplicate |
+| B | Gas leak — hazmat signals push severity past 85 and auto-escalate |
+| C | Flood — five callers become one escalating incident |
+| D | Prank caller — parked in human review, nothing dispatched |
+| E | Factory fire — nearest fire station lookup, then a live transfer to the fire ladder |
+| F | Open manhole, 450 Laurel Street, **Baton Rouge** — a calm 311-style report **spoken in Hindi**. Non-emergency, severity 10, and a traffic unit barricades the hole. The map flies out of the default city; the caller's language shows in the call log. |
+
+Drill F is the one scenario outside Ahmedabad: its address lives in the offline gazetteer with its own `city`,
+and two synthetic units (`PU-BR-1`, `TOW-BR-1`) are seeded nearby so a dispatch has something in range.
+Re-running it first frees that crew and closes the previous open-manhole incident, so it always plays clean.
 
 ## Design rules (keep these when refining)
 
