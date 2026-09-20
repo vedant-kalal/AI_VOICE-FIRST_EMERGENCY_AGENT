@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import type { Assignment, Facility, HubEvent, Incident, Resource, StateSnapshot } from "@/lib/types";
+import type { Assignment, Facility, HubEvent, Incident, Resource, StateSnapshot, Taxonomy } from "@/lib/types";
 import { categoryLabel, deptLabel, RESOURCE } from "@/lib/taxonomy";
 import { maskPhone, mins } from "@/lib/format";
 
@@ -36,8 +36,46 @@ export interface WireItem { id: number; ts: string; tone: Tone; title: string; d
 
 type Conn = "connecting" | "open" | "closed";
 
+/** Who is looking. "command" is the super-admin view (everything); "department" narrows to one department.
+ *  This is a VIEW filter for operators, not a security boundary — the backend serves the same data to all. */
+export interface Lens { mode: "command" | "department"; dept: string | null }
+const LENS_KEY = "dhvani.lens";
+
+function loadLens(): Lens {
+  try {
+    const raw = localStorage.getItem(LENS_KEY);
+    if (raw) {
+      const v = JSON.parse(raw) as Lens;
+      if (v.mode === "department" && v.dept) return v;
+    }
+  } catch { /* private mode / blocked storage */ }
+  return { mode: "command", dept: null };
+}
+
+export interface TaxonomyMap {
+  departments: { key: string; label: string }[];
+  categoryDepartments: Record<string, string[]>;   // category -> departments that own it
+  categoryLabels: Record<string, string>;
+  departmentResources: Record<string, string[]>;   // department -> resource types it works with
+}
+const EMPTY_TAXONOMY: TaxonomyMap = { departments: [], categoryDepartments: {}, categoryLabels: {}, departmentResources: {} };
+
+/** A department sees an incident it owns (by category) or was escalated into — the rule chosen for the lens. */
+export function incidentInScope(inc: Incident, lens: Lens, tax: TaxonomyMap): boolean {
+  if (lens.mode === "command" || !lens.dept) return true;
+  if ((tax.categoryDepartments[inc.category] ?? []).includes(lens.dept)) return true;
+  return (inc.escalated_to ?? []).includes(lens.dept);
+}
+
+export function resourceInScope(r: Resource, lens: Lens, tax: TaxonomyMap): boolean {
+  if (lens.mode === "command" || !lens.dept) return true;
+  return (tax.departmentResources[lens.dept] ?? []).includes(r.type);
+}
+
 interface LiveState {
   conn: Conn;
+  lens: Lens;
+  taxonomy: TaxonomyMap;
   hydrated: boolean;
   mode: string;
   criticalSeverity: number;
@@ -54,6 +92,8 @@ interface LiveState {
   flashAt: Record<string, number>;
 
   setConn(c: Conn): void;
+  setLens(lens: Lens): void;
+  setTaxonomy(raw: Taxonomy): void;
   hydrate(s: StateSnapshot): void;
   apply(ev: HubEvent, replay: boolean): void;
   select(id: string | null): void;
@@ -85,6 +125,8 @@ export const useLive = create<LiveState>((set, get) => {
 
   return {
     conn: "connecting",
+    lens: loadLens(),
+    taxonomy: EMPTY_TAXONOMY,
     hydrated: false,
     mode: "autonomous",
     criticalSeverity: 85,
@@ -101,6 +143,31 @@ export const useLive = create<LiveState>((set, get) => {
     flashAt: {},
 
     setConn: (conn) => set({ conn }),
+
+    setLens: (lens) => {
+      try { localStorage.setItem(LENS_KEY, JSON.stringify(lens)); } catch { /* storage blocked */ }
+      // Leaving a department must not strand a selection the new lens cannot see.
+      const sel = get().selectedId;
+      const inc = sel ? get().incidents[sel] : undefined;
+      const keep = !inc || incidentInScope(inc, lens, get().taxonomy);
+      set({ lens, selectedId: keep ? sel : null });
+    },
+
+    setTaxonomy: (raw) => {
+      const categoryDepartments: Record<string, string[]> = {};
+      const categoryLabels: Record<string, string> = {};
+      const departmentResources: Record<string, string[]> = {};
+      for (const c of raw.categories) {
+        categoryDepartments[c.key] = c.departments;
+        categoryLabels[c.key] = c.label;
+        for (const d of c.departments) {
+          const bucket = (departmentResources[d] ??= []);
+          for (const t of c.resources) if (!bucket.includes(t)) bucket.push(t);
+        }
+      }
+      set({ taxonomy: { departments: raw.departments.map(({ key, label }) => ({ key, label })),
+                        categoryDepartments, categoryLabels, departmentResources } });
+    },
 
     hydrate: (s) =>
       set((prev) => ({

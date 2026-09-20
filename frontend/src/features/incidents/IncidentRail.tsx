@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { Check, Layers, PhoneCall, ShieldAlert, Users, X } from "lucide-react";
 import { ACTIVE, useLive } from "@/store/live";
+import { useDepartmentLabel, useLensDept, useScopedIncidents } from "@/features/lens/scope";
+import { DeptGlyph, deptAccent } from "@/features/lens/deptVisuals";
 import { SeverityRing } from "@/components/SeverityRing";
 import { Pill } from "@/components/Pill";
 import { CATEGORY, categoryLabel, STATUS_LABEL } from "@/lib/taxonomy";
@@ -84,11 +86,14 @@ function IncidentCard({ i, selected, now, flashAt }: { i: Incident; selected: bo
 export function IncidentRail({ onDrill }: { onDrill: () => void }) {
   const [tab, setTab] = useState<Tab>("active");
   const now = useNow();
-  const { incidents, selectedId, flashAt, hydrated } = useLive(useShallow((s) => ({
-    incidents: s.incidents, selectedId: s.selectedId, flashAt: s.flashAt, hydrated: s.hydrated })));
+  const { selectedId, flashAt, hydrated } = useLive(useShallow((s) => ({
+    selectedId: s.selectedId, flashAt: s.flashAt, hydrated: s.hydrated })));
+  const { list: scoped } = useScopedIncidents();
+  const dept = useLensDept();
+  const deptName = useDepartmentLabel(dept);
 
   const groups = useMemo(() => {
-    const all = Object.values(incidents);
+    const all = scoped;
     const byUrgency = (a: Incident, b: Incident) =>
       Number(b.live_call) - Number(a.live_call) || b.severity - a.severity || (b.created_at ?? "").localeCompare(a.created_at ?? "");
     return {
@@ -97,7 +102,7 @@ export function IncidentRail({ onDrill }: { onDrill: () => void }) {
       closed: all.filter((i) => i.status === "resolved" || i.status === "closed")
         .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? "")),
     };
-  }, [incidents]);
+  }, [scoped]);
   const list = groups[tab];
 
   // FLIP: when severity reshuffles the queue, cards glide to their new rank instead of teleporting.
@@ -124,8 +129,11 @@ export function IncidentRail({ onDrill }: { onDrill: () => void }) {
   return (
     <section className="panel flex h-full flex-col overflow-hidden" aria-label="Incident queue">
       <div className="flex items-end justify-between px-5 pt-5 pb-3">
-        <div>
-          <div className="eyebrow">Queue</div>
+        <div className="min-w-0">
+          <div className="eyebrow flex items-center gap-1.5">
+            {dept ? <><span style={{ color: deptAccent(dept) }}><DeptGlyph dept={dept} size={11} /></span>
+              <span className="truncate" style={{ color: deptAccent(dept) }}>{deptName}</span></> : "Queue · city-wide"}
+          </div>
           <h2 className="mt-1 text-[22px] font-[650] tracking-[-0.025em]">Incidents</h2>
         </div>
         <div role="tablist" className="flex rounded-full border border-line bg-ink-1/60 p-1">

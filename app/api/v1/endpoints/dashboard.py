@@ -9,7 +9,7 @@ fine for a local demo, NOT for anything exposed. Role-based access is the produc
 """
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -24,6 +24,7 @@ from app.models.department import CallHandoff
 from app.models.incident import Escalation, Incident, IncidentEvent, IncidentReport
 from app.models.resource import Facility, Resource
 from app.services import dispatch_service, incident_service, resource_service
+from app.utils import taxonomy
 from app.services.dashboard_hub import hub
 
 
@@ -69,11 +70,19 @@ def get_state(db: Session = Depends(get_db)):
                  .order_by(Incident.created_at.desc()).limit(200).all())
     active_assignments = db.query(Assignment).filter(
         Assignment.status.in_(("pending_approval", "dispatched", "en_route", "arrived"))).all()
+    # Escalation targets for the whole page in one query — the console scopes a department's view by them.
+    esc: dict = {}
+    for iid, targets in db.query(Escalation.incident_id, Escalation.escalate_to).filter(
+            Escalation.incident_id.in_([i.id for i in incidents]) if incidents else False).all():
+        bucket = esc.setdefault(iid, [])
+        for key in (targets or []):
+            if key not in bucket:
+                bucket.append(key)
     return {
         "dispatch_mode": settings.DISPATCH_MODE,
         "critical_severity": settings.CRITICAL_SEVERITY,
         "center": {"lat": settings.CITY_CENTER_LAT, "lng": settings.CITY_CENTER_LNG},
-        "incidents": [incident_service.serialize_incident(db, i) for i in incidents],
+        "incidents": [incident_service.serialize_incident(db, i, esc.get(i.id, [])) for i in incidents],
         "resources": [_resource_dict(r) for r in db.query(Resource).filter(Resource.is_active.is_(True)).all()],
         "facilities": [{"id": str(f.id), "type": f.type, "name": f.name, "lat": f.lat, "lng": f.lng,
                         "capacity": f.capacity or {}} for f in db.query(Facility).all()],
@@ -221,13 +230,85 @@ def reject_assignment(assignment_id: str, db: Session = Depends(get_db)):
     return _assignment_dict(a, db)
 
 
+@router.get("/taxonomy")
+def get_taxonomy():
+    """The department / category map the console scopes its views by — served from
+    emergency_instructions/question_sets/incident_taxonomy.json so the UI never hard-codes a second copy."""
+    data = taxonomy.load_taxonomy()
+    return {
+        "departments": [{"key": k, "label": v.get("name", k), "contact": v.get("contact")}
+                        for k, v in data["departments"].items()],
+        "categories": [{"key": k, "label": v.get("label", k), "departments": v.get("departments", []),
+                        "escalate_to": v.get("escalate_to", []),
+                        "resources": [r.get("type") for r in v.get("resources", []) if r.get("type")],
+                        "base_severity": v.get("base_severity")}
+                       for k, v in data["categories"].items()],
+        "critical_severity": settings.CRITICAL_SEVERITY,
+    }
+
+
+def _call_row(c: Call, inc: Optional[Incident]) -> dict:
+    return {"id": str(c.id), "call_sid": c.call_sid, "from": c.from_number, "status": c.status,
+            "is_live": c.is_live, "duration_seconds": c.duration_seconds, "summary": c.summary,
+            "caller_language": c.caller_language, "transferred_to_human": c.transferred_to_human,
+            "started_at": c.started_at.isoformat() if c.started_at else None,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+            "incident_id": str(c.incident_id) if c.incident_id else None,
+            "incident_number": inc.incident_number if inc else None,
+            "category": inc.category if inc else None,
+            "sub_type": inc.sub_type if inc else None,
+            "address_text": inc.address_text if inc else None,
+            "severity": inc.severity if inc else None,
+            "severity_level": inc.severity_level if inc else None,
+            "incident_status": inc.status if inc else None,
+            "report_count": inc.report_count if inc else None}
+
+
 @router.get("/calls")
-def list_calls(db: Session = Depends(get_db), limit: int = Query(50, ge=1, le=200)):
-    rows = db.query(Call).order_by(Call.created_at.desc()).limit(limit).all()
-    return [{"id": str(c.id), "call_sid": c.call_sid, "from": c.from_number, "status": c.status,
-             "is_live": c.is_live, "duration_seconds": c.duration_seconds, "summary": c.summary,
-             "incident_id": str(c.incident_id) if c.incident_id else None,
-             "transferred_to_human": c.transferred_to_human} for c in rows]
+def list_calls(db: Session = Depends(get_db), limit: int = Query(50, ge=1, le=200),
+               offset: int = Query(0, ge=0), since_hours: Optional[int] = Query(None, ge=1, le=24 * 365),
+               department: Optional[str] = Query(None)):
+    """Past calls for the console's call log. `department` keeps only calls whose incident is owned by, or
+    was escalated to, that department (the same rule the console's department lens uses)."""
+    q = db.query(Call)
+    if since_hours:
+        q = q.filter(Call.created_at >= datetime.now(timezone.utc) - timedelta(hours=since_hours))
+    rows = q.order_by(Call.created_at.desc()).offset(offset).limit(limit).all()
+    incidents = {}
+    ids = [c.incident_id for c in rows if c.incident_id]
+    if ids:
+        incidents = {i.id: i for i in db.query(Incident).filter(Incident.id.in_(ids)).all()}
+    out = [_call_row(c, incidents.get(c.incident_id) if c.incident_id else None) for c in rows]
+    if department:
+        if department not in taxonomy.department_keys():
+            raise HTTPException(status_code=400, detail=f"Unknown department '{department}'")
+        # Owned by the department (via its category), or escalated into it — the console's lens rule.
+        keep = {str(i.id) for i in incidents.values()
+                if department in taxonomy.category_departments(i.category)
+                or department in incident_service.escalated_departments(db, i.id)}
+        out = [c for c in out if c["incident_id"] in keep]
+    return out
+
+
+@router.get("/calls/{call_id}")
+def get_call_detail(call_id: str, db: Session = Depends(get_db)):
+    """One call with its transcript and the tool calls the agent made on it — the call-log drawer."""
+    c = db.get(Call, _uid(call_id))
+    if not c:
+        raise HTTPException(status_code=404, detail="Call not found")
+    inc = db.get(Incident, c.incident_id) if c.incident_id else None
+    tools = (db.query(AgentToolCall).filter(AgentToolCall.call_id == c.id)
+             .order_by(AgentToolCall.created_at).all())
+    return {
+        **_call_row(c, inc),
+        "transcript": [{"role": t.role, "content": t.content,
+                        "at": t.created_at.isoformat() if t.created_at else None} for t in c.transcripts],
+        "tool_calls": [{"tool": t.tool_name, "status": t.status, "duration_ms": t.duration_ms,
+                        "arguments": t.arguments, "result": t.result,
+                        "at": t.created_at.isoformat() if t.created_at else None} for t in tools],
+        "departments": (taxonomy.category_departments(inc.category) if inc else []),
+        "escalated_to": (incident_service.escalated_departments(db, inc.id) if inc else []),
+    }
 
 
 @ws_router.websocket("/ws/dashboard")

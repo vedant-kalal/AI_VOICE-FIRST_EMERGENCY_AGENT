@@ -27,6 +27,8 @@ export interface Incident {
   people_affected: number | null;
   report_count: number;
   escalated: boolean;
+  /** Department keys this incident was escalated into (added for the console's department lens). */
+  escalated_to?: string[];
   live_call: boolean;
   summary: string | null;
   merged_into_id: string | null;
@@ -116,8 +118,33 @@ export interface CallRow {
   is_live: boolean;
   duration_seconds: number | null;
   summary: string | null;
-  incident_id: string | null;
+  caller_language: string | null;
   transferred_to_human: boolean;
+  started_at: string | null;
+  created_at: string | null;
+  incident_id: string | null;
+  incident_number: number | null;
+  category: string | null;
+  sub_type: string | null;
+  address_text: string | null;
+  severity: number | null;
+  severity_level: SeverityLevel | null;
+  incident_status: string | null;
+  report_count: number | null;
+}
+
+export interface CallDetail extends CallRow {
+  transcript: { role: string; content: string; at: string | null }[];
+  tool_calls: ToolCallRecord[];
+  departments: string[];
+  escalated_to: string[];
+}
+
+export interface Taxonomy {
+  departments: { key: string; label: string; contact: string | null }[];
+  categories: { key: string; label: string; departments: string[]; escalate_to: string[];
+                resources: string[]; base_severity: number | null }[];
+  critical_severity: number;
 }
 
 /** Every message on /ws/dashboard: {type, ts, data}. */

@@ -1,4 +1,4 @@
-import type { Assignment, CallRow, Incident, IncidentDetail, StateSnapshot } from "./types";
+import type { Assignment, CallDetail, CallRow, Incident, IncidentDetail, StateSnapshot, Taxonomy } from "./types";
 
 const KEY = import.meta.env.VITE_DASHBOARD_API_KEY as string | undefined;
 
@@ -30,7 +30,14 @@ export const api = {
   state: () => request<StateSnapshot>("/api/state"),
   incident: (id: string) => request<IncidentDetail>(`/api/incidents/${id}`),
   reviewQueue: () => request<Incident[]>("/api/review-queue"),
-  calls: (limit = 50) => request<CallRow[]>(`/api/calls?limit=${limit}`),
+  taxonomy: () => request<Taxonomy>("/api/taxonomy"),
+  calls: (opts: { limit?: number; offset?: number; sinceHours?: number | null; department?: string | null } = {}) => {
+    const q = new URLSearchParams({ limit: String(opts.limit ?? 60), offset: String(opts.offset ?? 0) });
+    if (opts.sinceHours) q.set("since_hours", String(opts.sinceHours));
+    if (opts.department) q.set("department", opts.department);
+    return request<CallRow[]>(`/api/calls?${q}`);
+  },
+  call: (id: string) => request<CallDetail>(`/api/calls/${id}`),
   review: (id: string, action: "release" | "reject") => post<Incident>(`/api/incidents/${id}/review`, { action }),
   setStatus: (id: string, status: "resolved" | "closed") => post<Incident>(`/api/incidents/${id}/status`, { status }),
   approve: (id: string, approver = "dhvani-console") => post<Assignment>(`/api/assignments/${id}/approve`, { approver }),

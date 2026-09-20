@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { Radio, Zap } from "lucide-react";
-import { useLive, useStats } from "@/store/live";
+import { ChevronDown, LayoutGrid, PhoneCall, Radio, ShieldCheck, Zap } from "lucide-react";
+import { useLive } from "@/store/live";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { clockIST } from "@/lib/format";
+import { useDepartmentLabel, useLens, useScopedStats } from "@/features/lens/scope";
+import { DeptGlyph, deptAccent } from "@/features/lens/deptVisuals";
+import type { ConsoleView } from "@/lib/view";
 
 function Brandmark() {
   // The mark is a spoken waveform that becomes a heartbeat — voice in, help out.
@@ -41,8 +44,51 @@ function Clock() {
   );
 }
 
-export function CommandBar({ onDrill }: { onDrill: () => void }) {
-  const s = useStats();
+function LensButton({ onOpen }: { onOpen: () => void }) {
+  const lens = useLens();
+  const label = useDepartmentLabel(lens.dept);
+  const dept = lens.mode === "department" ? lens.dept : null;
+  const accent = dept ? deptAccent(dept) : "var(--color-bone-dim)";
+  return (
+    <button onClick={onOpen} title="Switch access view"
+            className="group flex h-11 items-center gap-2.5 rounded-full border px-3 transition-[border-color,background] duration-150 hover:bg-ink-3"
+            style={{ borderColor: dept ? `color-mix(in srgb, ${accent} 45%, transparent)` : "var(--color-line-strong)",
+                     background: dept ? `color-mix(in srgb, ${accent} 10%, transparent)` : "transparent" }}>
+      <span className="grid size-6 place-items-center rounded-full" style={{ color: accent }}>
+        {dept ? <DeptGlyph dept={dept} size={15} /> : <ShieldCheck size={15} />}
+      </span>
+      <span className="flex flex-col items-start leading-none">
+        <span className="eyebrow">Viewing as</span>
+        <span className="mt-1 max-w-[168px] truncate text-[13px] font-[600]" style={{ color: dept ? accent : "var(--color-bone)" }}>
+          {dept ? label : "Super admin"}
+        </span>
+      </span>
+      <ChevronDown size={14} className="text-bone-faint transition-transform duration-150 group-hover:translate-y-0.5" />
+    </button>
+  );
+}
+
+function ViewSwitch({ view, onView }: { view: ConsoleView; onView: (v: ConsoleView) => void }) {
+  const items: { k: ConsoleView; label: string; Icon: typeof LayoutGrid }[] = [
+    { k: "board", label: "Live board", Icon: LayoutGrid },
+    { k: "calls", label: "Call log", Icon: PhoneCall },
+  ];
+  return (
+    <div role="tablist" aria-label="Console view" className="flex rounded-full border border-line bg-ink-1/60 p-1">
+      {items.map(({ k, label, Icon }) => (
+        <button key={k} role="tab" aria-selected={view === k} onClick={() => onView(k)}
+                className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-[550] transition-colors duration-150
+                  ${view === k ? "bg-ink-4 text-bone" : "text-bone-faint hover:text-bone-dim"}`}>
+          <Icon size={14} />{label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function CommandBar({ onDrill, onLens, view, onView }:
+  { onDrill: () => void; onLens: () => void; view: ConsoleView; onView: (v: ConsoleView) => void }) {
+  const s = useScopedStats();
   const mode = useLive((st) => st.mode);
   const conn = useLive((st) => st.conn);
   const connTone = conn === "open" ? "var(--color-sage)" : conn === "connecting" ? "var(--color-sodium)" : "var(--color-flare)";
@@ -60,6 +106,11 @@ export function CommandBar({ onDrill }: { onDrill: () => void }) {
       </div>
 
       <div className="divider h-10 w-px bg-line" />
+
+      <div className="flex shrink-0 items-center gap-2.5">
+        <LensButton onOpen={onLens} />
+        <ViewSwitch view={view} onView={onView} />
+      </div>
 
       <div className="stats scroll-quiet flex min-w-0 flex-1 items-center overflow-hidden [&>*+*]:border-l [&>*+*]:border-line">
         <Stat label="Active" value={s.active} />

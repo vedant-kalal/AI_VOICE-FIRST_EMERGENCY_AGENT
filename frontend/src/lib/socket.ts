@@ -17,6 +17,9 @@ export function startLiveLink(): () => void {
   const hydrate = () =>
     api.state().then((s) => store().hydrate(s)).catch((e) => console.warn("state fetch failed", e));
 
+  // Department/category map for the access lens — served from the backend taxonomy, fetched once.
+  api.taxonomy().then((t) => store().setTaxonomy(t)).catch((e) => console.warn("taxonomy fetch failed", e));
+
   const connect = () => {
     store().setConn("connecting");
     ws = new WebSocket(socketUrl());
