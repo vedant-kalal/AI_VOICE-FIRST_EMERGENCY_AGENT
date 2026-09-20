@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { useLive, type Tone } from "@/store/live";
+import { useLensDept, useScopedIncidents } from "@/features/lens/scope";
 import { clockIST } from "@/lib/format";
 import { gsap, prefersReducedMotion } from "@/lib/motion";
 
@@ -10,8 +11,13 @@ const TONE: Record<Tone, string> = {
 
 /** The wire: every backend event, newest first, as one horizontal strip. */
 export function Wire() {
-  const wire = useLive((s) => s.wire);
+  const all = useLive((s) => s.wire);
   const select = useLive((s) => s.select);
+  const dept = useLensDept();
+  const { ids } = useScopedIncidents();
+  // In a department view the wire carries only that department's traffic; city-wide events (a line opening
+  // before an incident exists) belong to command.
+  const wire = dept ? all.filter((w) => w.incidentId && ids.has(w.incidentId)) : all;
   const track = useRef<HTMLOListElement>(null);
   const lastTop = useRef<number | null>(null);
 

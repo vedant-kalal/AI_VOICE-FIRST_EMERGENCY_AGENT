@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fx, useLive } from "./live";
+import { fx, incidentInScope, resourceInScope, useLive, type Lens, type TaxonomyMap } from "./live";
 import { ago, parseTs } from "@/lib/format";
 import type { HubEvent } from "@/lib/types";
 
@@ -56,6 +56,48 @@ describe("live store", () => {
     useLive.getState().apply(ev("resource_search", search), false);
     expect(seen).toHaveBeenCalledWith(expect.objectContaining({ kind: "sweep", radiusKm: 15 }));
     off();
+  });
+});
+
+describe("department lens", () => {
+  const tax: TaxonomyMap = {
+    departments: [{ key: "fire_dept", label: "Fire & Rescue Services" }, { key: "ems", label: "EMS" }],
+    categoryDepartments: { fire: ["fire_dept"], road_accident: ["traffic_police", "ems"] },
+    categoryLabels: { fire: "Fire", road_accident: "Road accident" },
+    departmentResources: { fire_dept: ["fire_truck", "ambulance"], ems: ["ambulance"] },
+  };
+  const fire: Lens = { mode: "department", dept: "fire_dept" };
+  const command: Lens = { mode: "command", dept: null };
+
+  it("shows a department the incidents it owns", () => {
+    expect(incidentInScope(inc({ category: "fire" }) as never, fire, tax)).toBe(true);
+    expect(incidentInScope(inc({ category: "road_accident" }) as never, fire, tax)).toBe(false);
+  });
+
+  it("also shows incidents escalated into it", () => {
+    const escalated = inc({ category: "road_accident", escalated: true, escalated_to: ["fire_dept"] });
+    expect(incidentInScope(escalated as never, fire, tax)).toBe(true);
+  });
+
+  it("shows command everything", () => {
+    expect(incidentInScope(inc({ category: "road_accident" }) as never, command, tax)).toBe(true);
+  });
+
+  it("scopes units to the resource types a department works with", () => {
+    const unit = (type: string) => ({ id: "r", callsign: "X", type, status: "available", lat: 0, lng: 0,
+                                      capabilities: [], is_synthetic: true }) as never;
+    expect(resourceInScope(unit("fire_truck"), fire, tax)).toBe(true);
+    expect(resourceInScope(unit("tow_truck"), fire, tax)).toBe(false);
+    expect(resourceInScope(unit("tow_truck"), command, tax)).toBe(true);
+  });
+
+  it("drops a selected incident the new lens cannot see", () => {
+    useLive.setState({ taxonomy: tax });
+    useLive.getState().apply(ev("incident_created", inc({ category: "road_accident" })), true);
+    useLive.getState().select("i1");
+    useLive.getState().setLens(fire);
+    expect(useLive.getState().selectedId).toBeNull();
+    useLive.getState().setLens(command);
   });
 });
 

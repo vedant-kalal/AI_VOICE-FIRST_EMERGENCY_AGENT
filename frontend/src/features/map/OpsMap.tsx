@@ -4,7 +4,7 @@ import type { GeoJSONSource, Map as MLMap, Marker } from "maplibre-gl";
 // MapLibre v6 derives its worker URL from its own import.meta.url, which Vite's pre-bundling relocates.
 // Let Vite bundle the worker itself and hand MapLibre the resulting URL (works in dev and in builds).
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
-import { fx, useLive, type Fx } from "@/store/live";
+import { fx, incidentInScope, resourceInScope, useLive, type Fx } from "@/store/live";
 import { RESOURCE, SEVERITY_COLOR, UNIT_STATUS_COLOR } from "@/lib/taxonomy";
 import type { Assignment, Incident, Resource } from "@/lib/types";
 import { gsap, prefersReducedMotion } from "@/lib/motion";
@@ -76,9 +76,15 @@ export function OpsMap() {
 
     // ── incidents ──
     const syncIncidents = (incidents: Record<string, Incident>, selectedId: string | null) => {
-      for (const [id, m] of incM) if (!incidents[id] || incidents[id].lat == null) { m.remove(); incM.delete(id); }
+      const { lens, taxonomy } = useLive.getState();
+      const visible = (i: Incident) => i.lat != null && i.lng != null && incidentInScope(i, lens, taxonomy);
+      for (const [id, m] of incM) {
+        const i = incidents[id];
+        if (!i || !visible(i)) { m.remove(); incM.delete(id); }
+      }
       for (const i of Object.values(incidents)) {
-        if (i.lat == null || i.lng == null) continue;
+        if (!visible(i)) continue;
+        const at: [number, number] = [i.lng as number, i.lat as number];
         let m: Marker | undefined = incM.get(i.id);
         if (!m) {
           const el = document.createElement("button");
@@ -86,12 +92,12 @@ export function OpsMap() {
           el.setAttribute("aria-label", `Incident ${i.incident_number}`);
           el.innerHTML = '<span class="ring"></span><span class="ring"></span><span class="core"></span><span class="tag"></span>';
           el.addEventListener("click", (e) => { e.stopPropagation(); useLive.getState().select(i.id); });
-          const made = new maplibregl.Marker({ element: el }).setLngLat([i.lng, i.lat]).addTo(map);
+          const made = new maplibregl.Marker({ element: el }).setLngLat(at).addTo(map);
           incM.set(i.id, made);
           m = made;
           if (!reduce) gsap.from(el.querySelector(".core"), { scale: 0, duration: 0.6, ease: "back.out(3)" });
         } else {
-          m.setLngLat([i.lng, i.lat]);
+          m.setLngLat(at);
         }
         const el = m.getElement();
         const lvl = incLevel(i);
@@ -107,7 +113,13 @@ export function OpsMap() {
 
     // ── units ──
     const syncUnits = (resources: Record<string, Resource>) => {
+      const { lens, taxonomy } = useLive.getState();
+      for (const [id, u] of unitM) {
+        const r = resources[id];
+        if (!r || !resourceInScope(r, lens, taxonomy)) { gsap.killTweensOf(u.p); u.m.remove(); unitM.delete(id); }
+      }
       for (const r of Object.values(resources)) {
+        if (!resourceInScope(r, lens, taxonomy)) continue;
         let u = unitM.get(r.id);
         if (!u) {
           const el = document.createElement("div");
@@ -250,6 +262,11 @@ export function OpsMap() {
       if (s.resources !== prev.resources) syncUnits(s.resources);
       if (s.facilities !== prev.facilities) syncFacilities();
       if (s.assignments !== prev.assignments || s.incidents !== prev.incidents) refreshLinks();
+      if (s.lens !== prev.lens || s.taxonomy !== prev.taxonomy) {
+        syncIncidents(s.incidents, s.selectedId);   // a lens change adds or removes markers wholesale
+        syncUnits(s.resources);
+        refreshLinks();
+      }
       if (s.selectedId && s.selectedId !== prev.selectedId) {
         const i = s.incidents[s.selectedId];
         if (i?.lat != null) playFx({ kind: "fly", lat: i.lat, lng: i.lng!, zoom: 14.2 });

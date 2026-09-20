@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.call import Call
-from app.models.incident import ACTIVE_STATUSES, Incident, IncidentEvent, IncidentReport
+from app.models.incident import ACTIVE_STATUSES, Escalation, Incident, IncidentEvent, IncidentReport
 from app.services.geo_service import haversine_km
 from app.utils.taxonomy import duplicate_radius_m
 
@@ -198,9 +198,25 @@ def log_event(db: Session, incident_id, event_type: str, actor: str = "system", 
 
 
 # ── serialisation ───────────────────────────────────────────────────────────
-def serialize_incident(db: Session, inc: Incident) -> dict:
+def escalated_departments(db: Session, incident_id) -> list[str]:
+    """Department keys this incident has been escalated to, in the order they were added."""
+    out: list[str] = []
+    for (targets,) in db.query(Escalation.escalate_to).filter(Escalation.incident_id == incident_id).all():
+        for key in (targets or []):
+            if key not in out:
+                out.append(key)
+    return out
+
+
+def serialize_incident(db: Session, inc: Incident, escalated_to: Optional[list[str]] = None) -> dict:
+    """`escalated_to` may be pre-computed by the caller (one grouped query for a whole list);
+    left None it is looked up for this incident alone. The ops console needs it to scope a
+    department's view to the incidents it owns *or* has been escalated into."""
     live = db.query(Call.id).filter(Call.incident_id == inc.id, Call.is_live.is_(True)).first() is not None
+    if escalated_to is None:
+        escalated_to = escalated_departments(db, inc.id) if inc.escalated else []
     return {
+        "escalated_to": escalated_to,
         "id": str(inc.id), "incident_number": inc.incident_number, "category": inc.category,
         "sub_type": inc.sub_type, "description": inc.description, "address_text": inc.address_text,
         "lat": inc.lat, "lng": inc.lng, "location_confirmed": inc.location_confirmed,

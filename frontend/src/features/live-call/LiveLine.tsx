@@ -7,6 +7,7 @@ import { Pill } from "@/components/Pill";
 import { PIPELINE, PIPELINE_INDEX, deptLabel } from "@/lib/taxonomy";
 import { maskPhone } from "@/lib/format";
 import { gsap, prefersReducedMotion } from "@/lib/motion";
+import { useDepartmentLabel, useLensDept, useScopedIncidents } from "@/features/lens/scope";
 
 function useElapsed(from: string | undefined, to: string | null | undefined) {
   const [now, setNow] = useState(Date.now());
@@ -100,9 +101,14 @@ export function LiveLine({ onDrill }: { onDrill: () => void }) {
   const incidents = useLive((s) => s.incidents);
   const select = useLive((s) => s.select);
 
-  const ordered = useMemo(() => Object.values(calls).sort((a, b) =>
-    Number(b.live) - Number(a.live) || b.startedAt.localeCompare(a.startedAt)), [calls]);
-  const call = (focusSid && calls[focusSid]) || ordered[0];
+  const dept = useLensDept();
+  const deptName = useDepartmentLabel(dept);
+  const { ids } = useScopedIncidents();
+  const ordered = useMemo(() => Object.values(calls)
+    .filter((c) => !dept || (c.incidentId ? ids.has(c.incidentId) : false))
+    .sort((a, b) => Number(b.live) - Number(a.live) || b.startedAt.localeCompare(a.startedAt)), [calls, dept, ids]);
+  const focused = focusSid ? calls[focusSid] : undefined;
+  const call = (focused && ordered.includes(focused) ? focused : undefined) ?? ordered[0];
   const elapsed = useElapsed(call?.startedAt, call?.endedAt);
   const inc = call?.incidentId ? incidents[call.incidentId] : undefined;
 
@@ -158,9 +164,13 @@ export function LiveLine({ onDrill }: { onDrill: () => void }) {
       <div ref={scroller} className="scroll-quiet min-h-0 flex-1 overflow-y-auto px-5 py-5" aria-live="polite">
         {!call ? (
           <div className="flex h-full flex-col justify-center gap-3">
-            <p className="font-serif text-[30px] leading-[1.05] text-bone italic">The line is quiet.</p>
+            <p className="font-serif text-[30px] leading-[1.05] text-bone italic">
+              {dept ? "No call on your desk." : "The line is quiet."}
+            </p>
             <p className="max-w-[34ch] text-[13px] leading-relaxed text-bone-dim">
-              A real call arrives through Twilio and is answered by the realtime agent. Every word and every decision it makes streams here.
+              {dept
+                ? `Calls appear here once the agent logs an incident ${deptName} owns or is escalated into.`
+                : "A real call arrives through Twilio and is answered by the realtime agent. Every word and every decision it makes streams here."}
             </p>
             <button className="btn mt-1 self-start" onClick={onDrill}>Simulate a call</button>
           </div>
